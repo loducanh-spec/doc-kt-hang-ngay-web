@@ -60,3 +60,11 @@
 #pHome,#hModal{user-select:none;-webkit-user-select:none}
 html.iosapp #pHome .hTop{padding-top:calc(26px + env(safe-area-inset-top,0px))}
 #pHome .card b{display:inline;font-size:inherit}#pHome .card .mnav b{font-size:17px}
+#pHome .ringCard{display:flex;align-items:center;gap:16px}
+#pHome .ring{flex:none}
+#pHome .ringPct{font:600 21px var(--sans);fill:var(--or)}
+#pHome .ringTx{flex:1;min-width:0}#pHome .ringTx .lbl{margin:2px 0}
+#pHome .rcBig{font-size:18px;font-weight:600;margin:2px 0 4px}
+#pHome .st2{color:var(--gr);font-weight:600}#pHome .st1{color:var(--or);font-weight:600}#pHome .st0{color:var(--hi)}
+#pHome .fld input{width:100%}
+@media(max-width:370px){#pHome .ring{width:112px;height:112px}}

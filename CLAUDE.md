@@ -20,6 +20,9 @@ Có **tài khoản thành viên** (email/mật khẩu): mỗi người một k�
 - Tô màu, ghi chú, tìm kiếm, Drive đang ẩn bằng CSS; `toggleSel()` trả về ngay.
 - Công cụ thử (dữ liệu mẫu, sang ngày mai, tới Khải-huyền 22, xóa dữ liệu): mở link có `#thu`.
 - Ảnh báo cáo: hiện ảnh để nhấn giữ lưu; nếu trình duyệt hỗ trợ chia sẻ file (iPhone Safari có) thì có nút "Chia sẻ…".
+- **Hồ sơ cá nhân** (`PL.prof={name,group,t}`, tab Kế hoạch): họ tên thật (bắt buộc trước khi lưu ảnh báo cáo) và hội thánh/nhóm. Đồng bộ trong `plan`; Firestore còn ghi thêm field thường `name`, `group`, `email` ở `dkt/<uid>` để sau này làm trang quản lý cho mục sư. Đăng nhập/tạo tài khoản mà chưa có tên thì app nhắc khai.
+- **Vòng tròn tiến độ** (`ringCard()`, `ringSVG()`): % lần đọc hiện tại (`roundPct()`, dưới 10% hiện 1 chữ số thập phân), chữ cam ở giữa; có ở tab Hôm nay và Báo cáo. `dayInfo(k)` mô tả tình trạng một ngày (đã đọc xong / đọc dở x/n chương / chưa đọc).
+- **Ảnh báo cáo** (`shareImg()`, rộng 1080, cao theo số hàng lịch): đầu ảnh có họ tên, nhóm, email tài khoản, giờ tạo ảnh; vòng tiến độ; tình trạng hôm nay; lịch tháng; chú thích 5 màu ở cuối.
 - Biểu tượng: phương án C (vòng tiến độ quanh thánh giá), `icon-180/192/512.png`.
 
 ## Phát hành

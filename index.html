@@ -930,7 +930,7 @@ async function acctSync(interactive,usePos){
     const rb=remote?JSON.stringify({app:remote.app,ver:remote.ver,hl:remote.hl,tomb:remote.tomb,hist:remote.hist,searches:remote.searches,pos:remote.pos,plan:remote.plan}):'';
     if(body!==rb){
       r=await fetch(acURL(),{method:'PATCH',keepalive:body.length<60000,headers:Object.assign({'Content-Type':'application/json'},H),
-        body:JSON.stringify({fields:{data:{stringValue:body},t:{integerValue:String(Date.now())}}})});
+        body:JSON.stringify({fields:{data:{stringValue:body},t:{integerValue:String(Date.now())},name:{stringValue:profName()},group:{stringValue:(PL.prof&&PL.prof.group)||''},email:{stringValue:acct.email||''}}})});
       if(!r.ok)throw new Error('Không lưu được ('+r.status+')');
     }
     acct.last=Date.now();acct.err='';if(interactive)toast('Đã đồng bộ tài khoản');
@@ -954,7 +954,7 @@ async function acLogin(up){
     acct={uid:j.localId,email:j.email||email,refresh:j.refreshToken,idt:j.idToken,exp:Date.now()+(+j.expiresIn||3600)*1000,last:0,err:''};acSave();
     $('#acPass').value='';
     await acctSync(false,'force');
-    toast(up?'Đã tạo tài khoản. Kế hoạch trên máy này đã được lưu vào tài khoản.':'Đã đăng nhập: '+acct.email);if(homeOn())renderHome();
+    toast(up?'Đã tạo tài khoản. Kế hoạch trên máy này đã được lưu vào tài khoản.':'Đã đăng nhập: '+acct.email);if(homeOn())renderHome();if(!profName())setTimeout(()=>needProfile('Hãy khai họ và tên thật trong Hồ sơ cá nhân'),1800);
   }catch(e){renderAcct();toast(e.message)}
 }
 $('#acIn').onclick=()=>acLogin(false);
@@ -991,7 +991,7 @@ async function renderAbout(){
       <dt>Tính năng</dt><dd><small>Lật trang cong giấy · tô 4 màu và ghi chú · tìm kiếm có dấu/không dấu · đọc thành tiếng (chạy nền trên Android) · 3 nền màu · lịch sử đọc · sao lưu, đồng bộ.</small></dd>
     </dl></div>`;
 }
-const WEB_UPDATED='24/11/2026';
+const WEB_UPDATED='24/11/2026 (bản 2)';
 
 /* ---------- Nút Back của Android ---------- */
 if(AppP)AppP.addListener('backButton',()=>{
@@ -1060,7 +1060,7 @@ applyFull();
 const SaveImg=P('SaveImage');
 const TEST=location.hash==='#thu'; // công cụ thử: mở link có #thu
 let LEN=[],CUM=[0],NCH=0,TOTAL=0,lastCi=null;
-const pdef=()=>({goal:4,start:null,pos:0,log:{},plans:{},rounds:[],speed:1200,off:0,tp:0});
+const pdef=()=>({goal:4,start:null,pos:0,log:{},plans:{},rounds:[],speed:1200,off:0,tp:0,prof:null}); // prof: {name, group, t} hồ sơ cá nhân
 let PL=Object.assign(pdef(),store.get('plan',{}));
 const psave=()=>{store.set('plan',PL);if(typeof acctSoon==='function')acctSoon()};
 const touch=()=>{PL.tp=Date.now()}; // giờ người dùng đổi tiến độ/mục tiêu: dùng khi gộp dữ liệu giữa các máy
@@ -1133,12 +1133,28 @@ function continueReading(){
   const [b,c]=chList[PL.pos];const v=chIdx(pos.b,pos.c)===PL.pos?pos.v:1;
   hideHome();lastCi=null;go(b,c,v);
 }
+/* Tiến độ lần đọc hiện tại (Sáng-thế Ký 1 → Khải-huyền 22) và vòng tròn tiến độ */
+const roundPct=()=>CUM[PL.pos]/TOTAL*100;
+const fmtPct=v=>(v>0&&v<10?v.toFixed(1).replace('.',','):String(Math.round(v)))+'%';
+const curRound=y=>PL.rounds.filter(r=>r.y===y).length+1;
+function ringSVG(v,sz){const r=42,c=2*Math.PI*r,f=v>0?Math.max(.012,v/100):0;
+  return `<svg class="ring" viewBox="0 0 100 100" width="${sz}" height="${sz}" role="img" aria-label="Tiến độ ${fmtPct(v)}"><circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--hg)" stroke-width="9"/>
+  <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--gr)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(f*c).toFixed(2)} ${c.toFixed(2)}" transform="rotate(-90 50 50)"/>
+  <text x="50" y="50" text-anchor="middle" dominant-baseline="central" class="ringPct">${fmtPct(v)}</text></svg>`}
+/* Tình trạng một ngày, để người quản lý đọc nhanh */
+function dayInfo(k){const p=PL.plans[k],L=PL.log[k],s=dayState(k),r=L?L.ch.length:0,n=p?p.n:0;
+  return{s,txt:s===2?'Đã đọc xong'+(n?' ('+r+'/'+n+' chương)':' ('+r+' chương)'):s===1?'Đọc dở: '+r+'/'+n+' chương':'Chưa đọc'+(n?' (cần đọc '+n+' chương)':'')}}
+function ringCard(y){const v=roundPct(),k=dkey(today()),di=dayInfo(k);
+  return `<div class="card ringCard">${ringSVG(v,132)}<div class="ringTx"><div class="lbl">Tiến độ lần ${curRound(y)} năm ${y}</div>
+    <div class="rcBig">${PL.pos}/${NCH} chương</div><div class="lbl">Hôm nay: <span class="st${di.s}">${di.txt}</span></div><div class="lbl">${streak()} ngày liên tiếp · mục tiêu ${PL.goal} lần/năm</div></div></div>`}
+const profName=()=>PL.prof&&PL.prof.name||'';
+function needProfile(msg){htab='plan';renderHome();toast(msg||'Hãy khai họ tên trong mục Hồ sơ cá nhân');setTimeout(()=>{const e=$('#hName');if(e)e.focus()},300)}
 function cell(s,isT,extra){return `d ${extra||''} ${s===2?(isT?'co':'cg'):s===1?(isT?'cpo':'cpg'):''}`}
 function renderHome(){
   placeAcct();
   const body=$('#hBody');if(!NCH){body.innerHTML='<p class="note">Đang tải Kinh Thánh…</p>';return}
   const t=today(),k=dkey(t),p=plan(t),L=PL.log[k]||{c:0};
-  $('#hDate').textContent=fmtD(t)+(PL.off&&TEST?' (ngày giả lập)':'');
+  $('#hDate').textContent=fmtD(t)+(PL.off&&TEST?' (ngày giả lập)':'')+(profName()?' · '+profName():'');
   $$('#pHome .hTabs button').forEach(b=>b.classList.toggle('on',b.dataset.h===htab));
   if(htab==='today'){
     const pct=todayPct(),done=dayState(k)===2,y=t.getFullYear(),yr=PL.rounds.filter(r=>r.y===y).length;
@@ -1148,9 +1164,7 @@ function renderHome(){
       <div class="bar"><i style="width:${pct}%"></i></div>
       <div class="lbl">${done?'Đã xong phần hôm nay. Đọc thêm sẽ giảm phần những ngày sau.':'Đã đọc '+pct+'%'}</div>
       <div style="margin-top:14px"><button class="hbtn ${done?'alt':'or'}" id="hGo">${!L.c&&PL.pos===p.from?'Bắt đầu đọc':'Đọc tiếp'}: ${cname(PL.pos)}</button></div></div>
-      <div class="stats"><div class="stat"><b>${streak()}</b><span>ngày liên tiếp</span></div>
-      <div class="stat"><b>${yr}</b><span>lần xong năm ${y}</span></div>
-      <div class="stat"><b>${Math.round(CUM[PL.pos]/TOTAL*100)}%</b><span>lần ${yr+1} đang đọc</span></div></div>
+      ${ringCard(y)}
       <div class="card"><div class="lbl" style="margin-bottom:8px">7 ngày gần đây</div><div class="week">${wk}</div></div>
       <p class="note">Mục tiêu ${PL.goal} lần/năm. Phần đọc mỗi ngày được tính lại theo số chữ còn lại và số ngày còn lại trong năm.</p>`;
     $('#hGo').onclick=continueReading;
@@ -1161,18 +1175,24 @@ function renderHome(){
     let g=DOW.map(x=>`<div class="dow">${x}</div>`).join('');for(let i=0;i<first.getDay();i++)g+='<div class="d e"></div>';
     let cnt=0;for(let i=1;i<=days;i++){const d=new Date(y,m,i),kk=dkey(d),s=dayState(kk);if(s===2)cnt++;g+=`<div class="${cell(s,kk===k,d>t?'fu':'')}">${i}</div>`}
     const yd=Object.keys(PL.log).filter(x=>+x.slice(0,4)===y&&dayState(x)===2).length,rs=PL.rounds.filter(r=>r.y===y);
-    body.innerHTML=`<div class="card"><div class="mnav"><button id="hPm" aria-label="Tháng trước">‹</button><b>Tháng ${m+1}/${y}</b><button id="hNm" aria-label="Tháng sau">›</button></div>
+    body.innerHTML=`${ringCard(y)}<div class="card"><div class="mnav"><button id="hPm" aria-label="Tháng trước">‹</button><b>Tháng ${m+1}/${y}</b><button id="hNm" aria-label="Tháng sau">›</button></div>
       <div class="cal">${g}</div>
-      <div class="legend"><span><i style="background:var(--or)"></i>Hôm nay</span><span><i style="background:var(--gr)"></i>Đã đọc xong</span><span><i style="border-color:var(--gr)"></i>Đọc dở</span><span><i style="background:var(--hg)"></i>Chưa đọc</span></div></div>
+      <div class="legend"><span><i style="background:var(--or)"></i>Hôm nay, đã đọc xong</span><span><i style="border-color:var(--or)"></i>Hôm nay, đọc dở</span><span><i style="background:var(--gr)"></i>Đã đọc xong</span><span><i style="border-color:var(--gr)"></i>Đọc dở</span><span><i style="background:var(--hg)"></i>Chưa đọc</span></div></div>
       <div class="stats"><div class="stat"><b>${cnt}</b><span>ngày trong tháng</span></div><div class="stat"><b>${yd}</b><span>ngày năm ${y}</span></div><div class="stat"><b>${streak()}</b><span>ngày liên tiếp</span></div></div>
-      <div class="card"><div class="lbl" style="margin-bottom:8px">Đã đọc trọn Kinh Thánh năm ${y}</div>${rs.length?'<div class="chips">'+rs.map(r=>`<span class="chip">Lần ${r.n} năm ${r.y} · ${dparse(r.d).getDate()}/${dparse(r.d).getMonth()+1}</span>`).join('')+'</div>':'<div class="lbl">Chưa có lần nào. Đang đọc lần 1, được '+Math.round(CUM[PL.pos]/TOTAL*100)+'%.</div>'}</div>
+      <div class="card"><div class="lbl" style="margin-bottom:8px">Đã đọc trọn Kinh Thánh năm ${y}</div>${rs.length?'<div class="chips">'+rs.map(r=>`<span class="chip">Lần ${r.n} năm ${r.y} · ${dparse(r.d).getDate()}/${dparse(r.d).getMonth()+1}</span>`).join('')+'</div>':'<div class="lbl">Chưa có lần nào. Đang đọc lần 1, được '+fmtPct(roundPct())+'.</div>'}</div>
       <button class="hbtn" id="hShare">Lưu ảnh báo cáo · Chia sẻ</button>`;
     $('#hPm').onclick=()=>{hmonth=new Date(y,m-1,1);renderHome()};$('#hNm').onclick=()=>{hmonth=new Date(y,m+1,1);renderHome()};
-    $('#hShare').onclick=()=>shareImg(y,m,cnt,yd,rs);
+    $('#hShare').onclick=()=>{if(!profName())return needProfile('Hãy khai họ tên trước, để ảnh báo cáo ghi rõ của ai');shareImg(y,m,cnt,yd,rs)};
   }
   if(htab==='plan'){
     const per=PL.goal*TOTAL/365,ch=Math.round(per/(TOTAL/NCH)),mm=mins(per),[cb,cc]=chList[PL.pos];
-    body.innerHTML=`<div class="card"><div class="lbl">Mục tiêu đọc hết Kinh Thánh mỗi năm</div>
+    const pf=PL.prof||{};
+    body.innerHTML=`<div class="card"><div class="lbl">Hồ sơ cá nhân</div>
+      <div class="fld"><label for="hName">Họ và tên thật (hiện trên ảnh báo cáo gửi mục sư)</label><input id="hName" autocomplete="name" maxlength="60" value="${esc(pf.name||'')}" placeholder="Ví dụ: Nguyễn Văn An"></div>
+      <div class="fld"><label for="hGroup">Hội thánh / nhóm (không bắt buộc)</label><input id="hGroup" maxlength="60" value="${esc(pf.group||'')}" placeholder="Ví dụ: Nhóm thanh niên"></div>
+      <div style="margin-top:12px"><button class="hbtn" id="hPfSave">Lưu hồ sơ</button></div>
+      <p class="hint">${acct.uid?'Hồ sơ lưu cùng tài khoản '+esc(acct.email)+'.':'Chưa đăng nhập: hồ sơ chỉ lưu trên máy này.'}</p></div>
+      <div class="card"><div class="lbl">Mục tiêu đọc hết Kinh Thánh mỗi năm</div>
       <div class="step" style="margin-top:8px"><button id="hGm" aria-label="Giảm">−</button><b>${PL.goal}</b><span>lần / năm</span><button id="hGp" aria-label="Tăng">+</button></div>
       <div style="margin-top:12px">Trung bình mỗi ngày khoảng <b>${ch} chương</b>, đọc mất khoảng <b>${hm(mm)}</b>.</div>
       ${mm>120?'<div class="warn">Mục tiêu này cần hơn 2 giờ đọc mỗi ngày. Hãy cân nhắc trước khi chọn.</div>':''}
@@ -1184,6 +1204,9 @@ function renderHome(){
       <p class="lbl" style="margin:10px 0 0">Cỡ chữ, màu nền, giọng đọc: mở trang đọc, chạm thanh dưới cùng, chọn Cài đặt.</p></div>
       ${!TEST?'':`<details><summary>Công cụ thử (chỉ có ở bản web)</summary><div class="hrow" style="margin-top:6px"><button class="hbtn alt" id="hDemo">Tạo dữ liệu mẫu</button><button class="hbtn alt" id="hNx">Sang ngày mai</button></div>
       <div class="hrow" style="margin-top:10px"><button class="hbtn alt" id="hEnd">Tới Khải-huyền 22</button><button class="hbtn alt" id="hClr">Xóa dữ liệu</button></div></details>`}`;
+    $('#hPfSave').onclick=()=>{const name=$('#hName').value.trim().replace(/\s+/g,' '),group=$('#hGroup').value.trim().replace(/\s+/g,' ');
+      if(name.length<2){toast('Hãy nhập họ và tên thật');$('#hName').focus();return}
+      PL.prof={name,group,t:Date.now()};psave();renderHome();toast('Đã lưu hồ sơ')};
     const sb=$('#hSb'),sc=$('#hSc');
     const fill=()=>{const b=+sb.value;sc.innerHTML=B[b][2].map((_,c)=>`<option value="${c}" ${b===cb&&c===cc?'selected':''}>${c+1}</option>`).join('')};fill();
     const setPos=()=>{PL.pos=chIdx(+sb.value,+sc.value);touch();delete PL.plans[dkey(today())];psave()};
@@ -1192,33 +1215,56 @@ function renderHome(){
     $('#hGm').onclick=()=>g(-1);$('#hGp').onclick=()=>g(1);
     $('#hSp').onchange=e=>{PL.speed=Math.max(300,+e.target.value||1200);touch();psave();renderHome()};
     if(TEST){
-      $('#hDemo').onclick=()=>{const o=PL.off;PL=pdef();PL.off=o;const t0=today(),st=addD(t0,-45);PL.start=dkey(st);
+      $('#hDemo').onclick=()=>{const o=PL.off,pf=PL.prof;PL=pdef();PL.off=o;PL.prof=pf;const t0=today(),st=addD(t0,-45);PL.start=dkey(st);
         for(let i=0;i<45;i++){const d=addD(st,i),p=plan(d),r=Math.random();if(r<.1)continue;const need=r<.17?Math.ceil(p.n/2):p.n;for(let j=0;j<need;j++)readChapter(d)}
         touch();psave();htab='report';hmonth=null;toast('Đã tạo 45 ngày đọc mẫu');renderHome()};
       $('#hNx').onclick=()=>{PL.off++;psave();hmonth=null;toast('Đã chuyển sang '+fmtD(today()));renderHome()};
       $('#hEnd').onclick=()=>{PL.pos=NCH-1;touch();delete PL.plans[dkey(today())];psave();toast('Chương cần đọc: Khải-huyền 22. Đọc hết chương này để thấy thông báo.')};
-      $('#hClr').onclick=()=>{PL=pdef();PL.start=dkey(today());touch();psave();hmonth=null;htab='today';renderHome()};
+      $('#hClr').onclick=()=>{const pf=PL.prof;PL=pdef();PL.prof=pf;PL.start=dkey(today());touch();psave();hmonth=null;htab='today';renderHome()};
     }
   }
 }
 async function shareImg(y,m,cnt,yd,rs){
-  try{await Promise.all(['500','600'].map(w=>document.fonts.load(w+" 40px 'Be Vietnam Pro'")))}catch(e){}
-  const W=1080,H=1350,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
-  const F="'Be Vietnam Pro',sans-serif";
-  x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#173042';x.fillRect(0,0,W,230);
-  x.fillStyle='#fff';x.font='500 40px '+F;x.fillText('Đọc Kinh Thánh hằng ngày',70,100);x.font='600 72px '+F;x.fillText('Tháng '+(m+1)+'/'+y,70,185);
-  const t=today(),k=dkey(t),first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),cw=124,gap=12,ox=(W-(7*cw+6*gap))/2,oy=300;
-  x.font='500 30px '+F;x.fillStyle='#5d6873';x.textAlign='center';DOW.forEach((d,i)=>x.fillText(d,ox+i*(cw+gap)+cw/2,oy));
+  try{await Promise.all(['400','500','600'].map(w=>document.fonts.load(w+" 40px 'Be Vietnam Pro'")))}catch(e){}
+  const rowsN=Math.ceil((new Date(y,m,1).getDay()+new Date(y,m+1,0).getDate())/7);
+  const W=1080,H=760+28+rowsN*130+40+110+28+3*58+40,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
+  const F="'Be Vietnam Pro',sans-serif",OR='#ee8424',GR='#2f9e5b',GY='#e6e9ec',INK='#18212b',MU='#5d6873';
+  const t=today(),k=dkey(t),pf=PL.prof||{},v=roundPct(),di=dayInfo(k);
+  const fit=(txt,max)=>{let s2=txt;while(x.measureText(s2).width>max&&s2.length>4)s2=s2.slice(0,-2)+'…';return s2};
+  /* đầu trang: tên người đọc, nhóm, tài khoản */
+  x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#173042';x.fillRect(0,0,W,300);
+  x.fillStyle='#fff';x.globalAlpha=.8;x.font='500 34px '+F;x.fillText('Đọc Kinh Thánh hằng ngày · Tháng '+(m+1)+'/'+y,70,80);x.globalAlpha=1;
+  x.font='600 72px '+F;x.fillText(fit(pf.name||'(chưa khai tên)',940),70,170);
+  x.globalAlpha=.85;x.font='400 32px '+F;x.fillText(fit([pf.group,acct.uid?acct.email:'chưa đăng nhập tài khoản'].filter(Boolean).join(' · '),940),70,232);x.globalAlpha=1;
+  x.font='400 26px '+F;x.globalAlpha=.7;x.fillText('Ảnh tạo lúc '+pad2(new Date().getHours())+':'+pad2(new Date().getMinutes())+' ngày '+t.getDate()+'/'+(t.getMonth()+1)+'/'+t.getFullYear(),70,276);x.globalAlpha=1;
+  /* vòng tròn tiến độ */
+  const cx0=230,cy0=520,R=150;x.lineCap='round';
+  x.lineWidth=32;x.strokeStyle=GY;x.beginPath();x.arc(cx0,cy0,R,0,Math.PI*2);x.stroke();
+  if(v>0){x.strokeStyle=GR;x.beginPath();x.arc(cx0,cy0,R,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(.012,v/100));x.stroke()}
+  x.textAlign='center';x.fillStyle=OR;x.font='600 '+(fmtPct(v).length>4?78:92)+'px '+F;x.fillText(fmtPct(v),cx0,cy0+30);
+  x.fillStyle=MU;x.font='500 26px '+F;x.fillText('lần '+curRound(y)+' năm '+y,cx0,cy0+72);x.textAlign='left';
+  const tx=440;x.fillStyle=INK;x.font='600 44px '+F;x.fillText(PL.pos+'/'+NCH+' chương',tx,430);
+  x.fillStyle=MU;x.font='400 30px '+F;x.fillText('Đang ở '+fit(cname(PL.pos),560),tx,478);
+  x.fillStyle=MU;x.font='500 30px '+F;x.fillText('Hôm nay '+t.getDate()+'/'+(t.getMonth()+1)+':',tx,548);
+  x.fillStyle=di.s===2?GR:di.s===1?OR:MU;x.font='600 34px '+F;x.fillText(fit(di.txt,600),tx,594);
+  x.fillStyle=INK;x.font='500 30px '+F;x.fillText(streak()+' ngày liên tiếp · mục tiêu '+PL.goal+' lần/năm',tx,654);
+  /* lịch tháng */
+  const first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),cw=118,gap=12,ox=(W-(7*cw+6*gap))/2,oy=760;
+  x.font='500 28px '+F;x.fillStyle=MU;x.textAlign='center';DOW.forEach((d,i)=>x.fillText(d,ox+i*(cw+gap)+cw/2,oy));
   const rr=(a,b,w,h,r)=>{x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()};
-  for(let i=1;i<=days;i++){const ps=first.getDay()+i-1,cx=ox+(ps%7)*(cw+gap),cy=oy+30+Math.floor(ps/7)*(cw+gap);
-    const kk=dkey(new Date(y,m,i)),s=dayState(kk),col=kk===k?'#ee8424':'#2f9e5b';
-    rr(cx,cy,cw,cw,20);x.fillStyle=s===2?col:'#e6e9ec';x.fill();
-    if(s===1){x.lineWidth=6;x.strokeStyle=col;rr(cx+3,cy+3,cw-6,cw-6,18);x.stroke()}
-    x.fillStyle=s===2?'#fff':'#18212b';x.font='500 40px '+F;x.fillText(i,cx+cw/2,cy+cw/2+14)}
-  x.textAlign='left';x.fillStyle='#18212b';x.font='600 46px '+F;x.fillText(cnt+' ngày trong tháng · '+streak()+' ngày liên tiếp',70,1140);
-  x.font='500 38px '+F;x.fillStyle='#2f9e5b';
-  x.fillText(rs.length?rs.map(r=>'Lần '+r.n+' năm '+r.y).join(' · '):'Đang đọc lần 1 năm '+y+': '+Math.round(CUM[PL.pos]/TOTAL*100)+'%',70,1210);
-  x.fillStyle='#5d6873';x.font='400 30px '+F;x.fillText(yd+' ngày đọc trong năm '+y+' · mục tiêu '+PL.goal+' lần/năm',70,1270);
+  const box=(cx,cy,sz,s2,col,rad)=>{rr(cx,cy,sz,sz,rad);x.fillStyle=s2===2?col:GY;x.fill();if(s2===1){x.lineWidth=6;x.strokeStyle=col;rr(cx+3,cy+3,sz-6,sz-6,rad-2);x.stroke()}};
+  let rows=0;
+  for(let i=1;i<=days;i++){const ps=first.getDay()+i-1,cx=ox+(ps%7)*(cw+gap),cy=oy+28+Math.floor(ps/7)*(cw+gap);rows=Math.floor(ps/7)+1;
+    const kk=dkey(new Date(y,m,i)),s2=dayState(kk),col=kk===k?OR:GR;box(cx,cy,cw,s2,col,20);
+    x.fillStyle=s2===2?'#fff':INK;x.font='500 38px '+F;x.fillText(i,cx+cw/2,cy+cw/2+13)}
+  x.textAlign='left';let yy=oy+28+rows*(cw+gap)+40;
+  x.fillStyle=INK;x.font='600 36px '+F;x.fillText(fit('Tháng này: '+cnt+' ngày đọc xong · Năm '+y+': '+yd+' ngày',940),70,yy);
+  x.fillStyle=GR;x.font='500 32px '+F;x.fillText(rs.length?'Đã đọc trọn: '+rs.map(r=>'Lần '+r.n+' năm '+r.y).join(' · '):'Chưa đọc trọn lần nào trong năm '+y,70,yy+50);
+  /* chú thích màu */
+  yy+=110;x.strokeStyle='#dde1e5';x.lineWidth=2;x.beginPath();x.moveTo(70,yy-40);x.lineTo(W-70,yy-40);x.stroke();
+  x.fillStyle=MU;x.font='500 26px '+F;x.fillText('Chú thích màu',70,yy);
+  const LG=[[2,OR,'Hôm nay, đã đọc xong'],[1,OR,'Hôm nay, đọc dở'],[2,GR,'Ngày khác, đã đọc xong'],[1,GR,'Ngày khác, đọc dở'],[0,GR,'Chưa đọc']];
+  LG.forEach(([s2,col,lb],i)=>{const lx=70+(i%2)*480,ly=yy+28+Math.floor(i/2)*58;box(lx,ly,40,s2,col,9);x.fillStyle=INK;x.font='400 28px '+F;x.fillText(lb,lx+56,ly+30)});
   const url=cv.toDataURL('image/png'),name='BaoCao_'+y+'-'+pad2(m+1)+'_'+Date.now()%100000+'.png';
   if(NATIVE)showModal(`<img src="${url}" alt="Ảnh báo cáo"><button class="hbtn or" data-a="save">Lưu vào Thư viện ảnh</button><button class="hbtn" data-a="share">Chia sẻ (Telegram, Zalo…)</button><button class="hbtn" data-a="x" style="background:transparent;color:inherit;border:1px solid #ccc">Đóng</button>`,{
     save:async()=>{try{await SaveImg.save({data:url,name});toast('Đã lưu vào Thư viện ảnh (thư mục Doc KT Hang Ngay)')}catch(e){
@@ -1251,6 +1297,7 @@ function mergePlan(r,force){
   for(const [k,v] of Object.entries(r.plans||{}))if(!PL.plans[k]||(force&&JSON.stringify(PL.plans[k])!==JSON.stringify(v))){PL.plans[k]=v;ch=true}
   for(const x of r.rounds||[])if(!PL.rounds.some(y=>y.y===x.y&&y.n===x.n)){PL.rounds.push(x);ch=true}
   PL.rounds.sort((a,b)=>a.d<b.d?-1:1);
+  if(r.prof&&r.prof.t&&(!PL.prof||r.prof.t>(PL.prof.t||0)||force)&&JSON.stringify(r.prof)!==JSON.stringify(PL.prof)){PL.prof=r.prof;ch=true}
   if((r.tp||0)>(PL.tp||0)||(force&&r.tp)){for(const f of ['goal','start','pos','speed','tp'])if(r[f]!==undefined&&PL[f]!==r[f]){PL[f]=r[f];ch=true}}
   if(ch){store.set('plan',PL);lastCi=null;if(homeOn())renderHome()}
   return ch;
