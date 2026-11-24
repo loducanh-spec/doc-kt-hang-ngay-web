@@ -991,7 +991,7 @@ async function renderAbout(){
       <dt>Tính năng</dt><dd><small>Lật trang cong giấy · tô 4 màu và ghi chú · tìm kiếm có dấu/không dấu · đọc thành tiếng (chạy nền trên Android) · 3 nền màu · lịch sử đọc · sao lưu, đồng bộ.</small></dd>
     </dl></div>`;
 }
-const WEB_UPDATED='24/11/2026 (bản 3)';
+const WEB_UPDATED='24/11/2026 (bản 4)';
 
 /* ---------- Nút Back của Android ---------- */
 if(AppP)AppP.addListener('backButton',()=>{
@@ -1197,9 +1197,11 @@ function renderHome(){
       <div class="legend"><span><i style="background:var(--or)"></i>Hôm nay, đã đọc xong</span><span><i style="border-color:var(--or)"></i>Hôm nay, đọc dở</span><span><i style="background:var(--gr)"></i>Đã đọc xong</span><span><i style="border-color:var(--gr)"></i>Đọc dở</span><span><i style="background:var(--hg)"></i>Chưa đọc</span></div></div>
       <div class="stats"><div class="stat"><b>${cnt}</b><span>ngày trong tháng</span></div><div class="stat"><b>${yd}</b><span>ngày năm ${y}</span></div><div class="stat"><b>${streak()}</b><span>ngày liên tiếp</span></div></div>
       <div class="card"><div class="lbl" style="margin-bottom:8px">Đã đọc trọn Kinh Thánh năm ${y}</div>${ybOf(y)&&ybOf(y).r?`<div class="chips" style="margin-bottom:8px"><span class="chip">Lần 1–${ybOf(y).r}: khai báo trước khi dùng app</span></div>`:''}${rs.length?'<div class="chips">'+rs.map(r=>`<span class="chip">Lần ${r.n} năm ${r.y} · ${dparse(r.d).getDate()}/${dparse(r.d).getMonth()+1}</span>`).join('')+'</div>':'<div class="lbl">Chưa có lần nào đọc trọn trong app. Đang đọc lần '+curRound(y)+', được '+fmtPct(roundPct())+'.</div>'}</div>
-      <button class="hbtn" id="hShare">Lưu ảnh báo cáo · Chia sẻ</button>`;
+      <button class="hbtn or" id="hShareG">Lưu ảnh báo cáo · Chia sẻ</button>
+      <button class="hbtn alt" id="hShare" style="margin-top:10px">Ảnh báo cáo dạng lịch tháng</button>`;
     $('#hPm').onclick=()=>{hmonth=new Date(y,m-1,1);renderHome()};$('#hNm').onclick=()=>{hmonth=new Date(y,m+1,1);renderHome()};
     $('#hShare').onclick=()=>{if(!profName())return needProfile('Hãy khai họ tên trước, để ảnh báo cáo ghi rõ của ai');shareImg(y,m,cnt,yd,rs)};
+    $('#hShareG').onclick=()=>{if(!profName())return needProfile('Hãy khai họ tên trước, để ảnh báo cáo ghi rõ của ai');shareGrid()};
   }
   if(htab==='plan'){
     const t0=today(),yy=t0.getFullYear(),left=ddiff(t0,new Date(yy+1,0,1)),remC=Math.max(0,yearTarget(yy)-readIn(yy,dkey(t0))),per=remC/left,ch=Math.round(per/(TOTAL/NCH)),mm=mins(per),[cb,cc]=chList[PL.pos];
@@ -1298,7 +1300,10 @@ async function shareImg(y,m,cnt,yd,rs){
   x.fillStyle=MU;x.font='500 26px '+F;x.fillText('Chú thích màu',70,yy);
   const LG=[[2,OR,'Hôm nay, đã đọc xong'],[1,OR,'Hôm nay, đọc dở'],[2,GR,'Ngày khác, đã đọc xong'],[1,GR,'Ngày khác, đọc dở'],[0,GR,'Chưa đọc']];
   LG.forEach(([s2,col,lb],i)=>{const lx=70+(i%2)*480,ly=yy+28+Math.floor(i/2)*58;box(lx,ly,40,s2,col,9);x.fillStyle=INK;x.font='400 28px '+F;x.fillText(lb,lx+56,ly+30)});
-  const url=cv.toDataURL('image/png'),name='BaoCao_'+y+'-'+pad2(m+1)+'_'+Date.now()%100000+'.png';
+  deliverImg(cv,'BaoCao_'+y+'-'+pad2(m+1)+'_'+Date.now()%100000+'.png');
+}
+async function deliverImg(cv,name){
+  const url=cv.toDataURL('image/png');
   if(NATIVE)showModal(`<img src="${url}" alt="Ảnh báo cáo"><button class="hbtn or" data-a="save">Lưu vào Thư viện ảnh</button><button class="hbtn" data-a="share">Chia sẻ (Telegram, Zalo…)</button><button class="hbtn" data-a="x" style="background:transparent;color:inherit;border:1px solid #ccc">Đóng</button>`,{
     save:async()=>{try{await SaveImg.save({data:url,name});toast('Đã lưu vào Thư viện ảnh (thư mục Doc KT Hang Ngay)')}catch(e){
       if(/OLD_ANDROID/.test(String(e&&e.message)))toast('Máy Android này cần lưu qua nút Chia sẻ');else toast('Không lưu được ảnh: '+(e&&e.message||e))}},
@@ -1312,6 +1317,54 @@ async function shareImg(y,m,cnt,yd,rs){
       share:()=>{navigator.share({files:[file],title:'Báo cáo đọc Kinh Thánh'}).catch(e=>{if(!/abort|cancel/i.test(String(e&&e.name)+String(e&&e.message)))toast('Không chia sẻ được: '+(e&&e.message||e))})},
       x:hideModal});
   }
+}
+
+/* Ảnh báo cáo dạng sách (phương án C, David chốt 24/11/2026): 66 sách thành 2 cột, ô tên sách bo góc
+   (xanh đậm: đọc xong sách, cam: sách đang đọc, tối: chưa đọc), mỗi đoạn một vòng tròn 24 đoạn/hàng
+   (xanh lá: đã đọc, cam: đoạn đang đọc, chỉ viền: chưa đọc đến). Đầu ảnh: tên tài khoản và thanh tiến độ lần đọc. */
+async function shareGrid(){
+  try{await Promise.all(['400','500','600','700'].map(w=>document.fonts.load(w+" 20px 'Be Vietnam Pro'")))}catch(e){}
+  const F="'Be Vietnam Pro',Arial,sans-serif",OR='#f39a2b',GR='#3cc35a',NAVY='#173042',INK='#111';
+  const META=B.map(bk=>[bk[0],bk[2].length]),t=today(),y=t.getFullYear(),pf=PL.prof||{},di=dayInfo(dkey(t));
+  const PER=24,D=24,P=28,NW=158,M=24,BG=7,HEAD=196,SPLIT=24;
+  const rowsOf=n=>Math.ceil(n/PER),bookH=n=>rowsOf(n)*P-(P-D);
+  const sideH=(b0,b1)=>{let h=0;for(let b=b0;b<b1;b++)h+=bookH(META[b][1])+BG;return h};
+  const SW=NW+12+PER*P,GAP=40,W=M*2+SW*2+GAP,H=HEAD+M+Math.max(sideH(0,SPLIT),sideH(SPLIT,META.length))+70;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');x.textBaseline='middle';
+  const rr=(a,b2,w,h,r)=>{x.beginPath();x.moveTo(a+r,b2);x.arcTo(a+w,b2,a+w,b2+h,r);x.arcTo(a+w,b2+h,a,b2+h,r);x.arcTo(a,b2+h,a,b2,r);x.arcTo(a,b2,a+w,b2,r);x.closePath()};
+  const fitF=(txt,max,fs,wt)=>{x.font=wt+' '+fs+'px '+F;while(x.measureText(txt).width>max&&fs>10){fs--;x.font=wt+' '+fs+'px '+F}return fs};
+  x.fillStyle='#fff';x.fillRect(0,0,W,H);
+  /* đầu ảnh: tài khoản báo cáo */
+  x.fillStyle=NAVY;x.fillRect(0,0,W,HEAD);x.fillStyle='#fff';x.textAlign='left';
+  fitF(pf.name||'(chưa khai tên)',W-2*M,40,'600');x.fillText(pf.name||'(chưa khai tên)',M,52);
+  const now=new Date(),sub=[pf.group?'Nhóm: '+pf.group:'',acct.uid?acct.email:'chưa đăng nhập tài khoản','Báo cáo lúc '+pad2(now.getHours())+':'+pad2(now.getMinutes())+' ngày '+t.getDate()+'/'+(t.getMonth()+1)+'/'+y,'Hôm nay: '+di.txt].filter(Boolean).join(' · ');
+  x.globalAlpha=.85;fitF(sub,W-2*M,22,'400');x.fillText(sub,M,96);x.globalAlpha=1;
+  const v=roundPct();x.font='600 26px '+F;x.fillText('Đọc lần thứ '+curRound(y),M,146);
+  const bx=M+260,bw=W-bx-340;rr(bx,134,bw,24,12);x.fillStyle='rgba(255,255,255,.18)';x.fill();
+  if(v>0){rr(bx,134,Math.max(24,bw*v/100),24,12);x.fillStyle=GR;x.fill()}
+  x.fillStyle=OR;x.font='700 44px '+F;x.textAlign='right';x.fillText(fmtPct(v),W-M-170,146);
+  x.fillStyle='#fff';x.font='400 20px '+F;x.fillText(PL.pos+'/'+NCH+' đoạn',W-M,146);
+  /* các sách */
+  const st=i=>i<PL.pos?'g':i===PL.pos?'o':'';
+  const circ=(cx,cy,s2,num)=>{x.beginPath();x.arc(cx,cy,D/2,0,Math.PI*2);
+    if(s2){x.fillStyle=s2==='g'?GR:OR;x.fill()}else{x.lineWidth=1.5;x.strokeStyle='#9aa3ab';x.stroke()}
+    x.fillStyle=s2?INK:'#6b7580';x.textAlign='center';x.font=(num>99?'500 11px ':'500 13px ')+F;x.fillText(num,cx,cy+1)};
+  let gi=0;
+  const side=(b0,b1,ox)=>{let yy=HEAD+M;
+    for(let b=b0;b<b1;b++){const n=META[b][1],nr=rowsOf(n),h=bookH(n);let done=0;for(let i=0;i<n;i++)if(st(gi+i)==='g')done++;
+      const bs=done===n?'g':(done||st(gi)==='o'||(PL.pos>gi&&PL.pos<gi+n))?'o':'';
+      rr(ox,yy,NW,h,10);x.fillStyle=bs==='g'?'#1f7a3a':bs==='o'?'#c76a0e':NAVY;x.fill();
+      x.fillStyle='#fff';x.textAlign='center';fitF(META[b][0],NW-14,nr>1?16:14,'600');x.fillText(META[b][0],ox+NW/2,yy+h/2-(nr>1?9:0));
+      if(nr>1){x.font='400 13px '+F;x.globalAlpha=.85;x.fillText(done+'/'+n,ox+NW/2,yy+h/2+12);x.globalAlpha=1}
+      for(let i=0;i<n;i++)circ(ox+NW+12+(i%PER)*P+D/2,yy+Math.floor(i/PER)*P+D/2,st(gi+i),i+1);
+      yy+=h+BG;gi+=n}};
+  side(0,SPLIT,M);side(SPLIT,META.length,M+SW+GAP);
+  /* chú thích */
+  let lx=M;const ly=H-32;x.textAlign='left';
+  [[GR,'Đã đọc hết'],[OR,'Đang đọc dở'],['','Chưa đọc đến'],['#1f7a3a','Sách đã đọc xong','r'],['#c76a0e','Sách đang đọc','r'],[NAVY,'Sách chưa đọc','r']].forEach(([c,lb,r])=>{
+    if(r){rr(lx,ly-11,34,22,6);x.fillStyle=c;x.fill()}else{x.beginPath();x.arc(lx+12,ly,12,0,7);if(c){x.fillStyle=c;x.fill()}else{x.lineWidth=1.5;x.strokeStyle='#9aa3ab';x.stroke()}}
+    x.fillStyle=INK;x.font='400 20px '+F;x.fillText(lb,lx+(r?44:32),ly+1);lx+=x.measureText(lb).width+(r?44:32)+46});
+  deliverImg(cv,'BaoCao_'+(pf.name||'').replace(/\s+/g,'')+'_'+dkey(t)+'.png');
 }
 $$('#pHome .hTabs button').forEach(b=>b.onclick=()=>{htab=b.dataset.h;hmonth=null;renderHome()});
 $('#stHome').onclick=openHome;$('#bHome').onclick=openHome;
