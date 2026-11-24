@@ -68,3 +68,8 @@ html.iosapp #pHome .hTop{padding-top:calc(26px + env(safe-area-inset-top,0px))}
 #pHome .st2{color:var(--gr);font-weight:600}#pHome .st1{color:var(--or);font-weight:600}#pHome .st0{color:var(--hi)}
 #pHome .fld input{width:100%}
 @media(max-width:370px){#pHome .ring{width:112px;height:112px}}
+#pHome .bkHead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:4px}#pHome .bkHead b{font-size:18px}#pHome .bkHead span{color:var(--hm);font-size:14px;white-space:nowrap}
+#pHome .bkGrid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;margin-top:10px}
+#pHome .bkGrid span{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;border-radius:5px;background:var(--hg);color:var(--hi);border:2px solid transparent}
+#pHome .bkGrid .cg{background:var(--gr);color:#fff}#pHome .bkGrid .co{background:var(--or);color:#fff}#pHome .bkGrid .nx{border-color:var(--hi);font-weight:600}
+#pHome .step small{font-size:12px}
