@@ -991,7 +991,7 @@ async function renderAbout(){
       <dt>Tính năng</dt><dd><small>Lật trang cong giấy · tô 4 màu và ghi chú · tìm kiếm có dấu/không dấu · đọc thành tiếng (chạy nền trên Android) · 3 nền màu · lịch sử đọc · sao lưu, đồng bộ.</small></dd>
     </dl></div>`;
 }
-const WEB_UPDATED='24/11/2026 (bản 4)';
+const WEB_UPDATED='25/11/2026';
 
 /* ---------- Nút Back của Android ---------- */
 if(AppP)AppP.addListener('backButton',()=>{
@@ -1197,10 +1197,12 @@ function renderHome(){
       <div class="legend"><span><i style="background:var(--or)"></i>Hôm nay, đã đọc xong</span><span><i style="border-color:var(--or)"></i>Hôm nay, đọc dở</span><span><i style="background:var(--gr)"></i>Đã đọc xong</span><span><i style="border-color:var(--gr)"></i>Đọc dở</span><span><i style="background:var(--hg)"></i>Chưa đọc</span></div></div>
       <div class="stats"><div class="stat"><b>${cnt}</b><span>ngày trong tháng</span></div><div class="stat"><b>${yd}</b><span>ngày năm ${y}</span></div><div class="stat"><b>${streak()}</b><span>ngày liên tiếp</span></div></div>
       <div class="card"><div class="lbl" style="margin-bottom:8px">Đã đọc trọn Kinh Thánh năm ${y}</div>${ybOf(y)&&ybOf(y).r?`<div class="chips" style="margin-bottom:8px"><span class="chip">Lần 1–${ybOf(y).r}: khai báo trước khi dùng app</span></div>`:''}${rs.length?'<div class="chips">'+rs.map(r=>`<span class="chip">Lần ${r.n} năm ${r.y} · ${dparse(r.d).getDate()}/${dparse(r.d).getMonth()+1}</span>`).join('')+'</div>':'<div class="lbl">Chưa có lần nào đọc trọn trong app. Đang đọc lần '+curRound(y)+', được '+fmtPct(roundPct())+'.</div>'}</div>
-      <button class="hbtn or" id="hShareG">Lưu ảnh báo cáo · Chia sẻ</button>
+      <button class="hbtn or" id="hShareT">Lưu ảnh báo cáo · Chia sẻ</button>
+      <button class="hbtn alt" id="hShareG" style="margin-top:10px">Ảnh báo cáo dạng vòng tròn</button>
       <button class="hbtn alt" id="hShare" style="margin-top:10px">Ảnh báo cáo dạng lịch tháng</button>`;
     $('#hPm').onclick=()=>{hmonth=new Date(y,m-1,1);renderHome()};$('#hNm').onclick=()=>{hmonth=new Date(y,m+1,1);renderHome()};
     $('#hShare').onclick=()=>{if(!profName())return needProfile('Hãy khai họ tên trước, để ảnh báo cáo ghi rõ của ai');shareImg(y,m,cnt,yd,rs)};
+    $('#hShareT').onclick=()=>shareTable();
     $('#hShareG').onclick=()=>{if(!profName())return needProfile('Hãy khai họ tên trước, để ảnh báo cáo ghi rõ của ai');shareGrid()};
   }
   if(htab==='plan'){
@@ -1317,6 +1319,41 @@ async function deliverImg(cv,name){
       share:()=>{navigator.share({files:[file],title:'Báo cáo đọc Kinh Thánh'}).catch(e=>{if(!/abort|cancel/i.test(String(e&&e.name)+String(e&&e.message)))toast('Không chia sẻ được: '+(e&&e.message||e))})},
       x:hideModal});
   }
+}
+
+/* Ảnh báo cáo dạng bảng (mẫu Excel "Đọc lần thứ N" của David, chốt 25/11/2026): không có thông tin tài khoản,
+   dòng "Đọc lần thứ N" chữ to. 66 sách 2 cột (24 sách bên trái), mỗi hàng 22 đoạn, kẻ ô đen.
+   Tô màu: cam = đoạn đọc hôm nay, xanh lá = đoạn đã đọc những ngày trước (trong lần đọc hiện tại). */
+async function shareTable(){
+  try{await Promise.all(['400','600','700'].map(w=>document.fonts.load(w+" 20px 'Be Vietnam Pro'")))}catch(e){}
+  const F="'Be Vietnam Pro',Calibri,Arial,sans-serif",t=today(),y=t.getFullYear();
+  const META=B.map(bk=>[bk[0],bk[2].length]),L=PL.log[dkey(t)],td=new Set(L?L.ch:[]);
+  const st=i=>i<PL.pos?(td.has(i)?'o':'g'):'';
+  const PER=22,CW=31,CH=27,NW=128,GAP=26,M=20,TT=76,SPLIT=24;
+  const side=(b0,b1)=>{let r=0;for(let b=b0;b<b1;b++)r+=Math.ceil(META[b][1]/PER);return r};
+  const rows=Math.max(side(0,SPLIT),side(SPLIT,META.length)),SW=NW+PER*CW;
+  const W=M*2+SW*2+GAP,H=M+TT+rows*CH+M,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
+  x.fillStyle='#fff';x.fillRect(0,0,W,H);x.textBaseline='middle';
+  /* "Đọc lần thứ N": chữ to, số lần màu cam */
+  x.textAlign='left';x.fillStyle='#000';x.font='700 44px '+F;const lb='Đọc lần thứ ',wl=x.measureText(lb).width;x.fillText(lb,M,M+TT/2-4);
+  x.fillStyle='#e07b00';x.font='700 56px '+F;x.fillText(String(curRound(y)),M+wl,M+TT/2-6);
+  const ty=M+TT;let gi=0;
+  const nameCell=(nm,ox,ry,h)=>{let fs=15;x.font='400 '+fs+'px '+F;const max=NW-8;x.fillStyle='#000';x.textAlign='center';
+    if(x.measureText(nm).width<=max){x.fillText(nm,ox+NW/2,ry+h/2);return}
+    const w=nm.split(' ');if(h>=CH*2&&w.length>1){let bst=null;for(let k=1;k<w.length;k++){const l1=w.slice(0,k).join(' '),l2=w.slice(k).join(' '),mm=Math.max(x.measureText(l1).width,x.measureText(l2).width);if(!bst||mm<bst[0])bst=[mm,l1,l2]}
+      while(bst[0]>max&&fs>11){fs--;x.font='400 '+fs+'px '+F;bst[0]=Math.max(x.measureText(bst[1]).width,x.measureText(bst[2]).width)}
+      x.fillText(bst[1],ox+NW/2,ry+h/2-fs*.6);x.fillText(bst[2],ox+NW/2,ry+h/2+fs*.6);return}
+    while(x.measureText(nm).width>max&&fs>10){fs--;x.font='400 '+fs+'px '+F}x.fillText(nm,ox+NW/2,ry+h/2)};
+  const drawSide=(b0,b1,ox)=>{let ry=ty;
+    for(let b=b0;b<b1;b++){const n=META[b][1],nr=Math.ceil(n/PER);
+      x.lineWidth=1;x.strokeStyle='#000';x.strokeRect(ox+.5,ry+.5,NW,nr*CH);nameCell(META[b][0],ox,ry,nr*CH);
+      for(let i=0;i<n;i++){const cx=ox+NW+(i%PER)*CW,cy=ry+Math.floor(i/PER)*CH,s2=st(gi+i);
+        if(s2){x.fillStyle=s2==='o'?'#f7941d':'#22e022';x.fillRect(cx,cy,CW,CH)}
+        x.strokeStyle='#000';x.strokeRect(cx+.5,cy+.5,CW,CH);
+        x.fillStyle='#000';x.textAlign='center';x.font=(i+1>99?'400 12px ':'400 14px ')+F;x.fillText(i+1,cx+CW/2,cy+CH/2+1)}
+      gi+=n;ry+=nr*CH}};
+  drawSide(0,SPLIT,M);drawSide(SPLIT,META.length,M+SW+GAP);
+  deliverImg(cv,'DocLanThu'+curRound(y)+'_'+dkey(t)+'.png');
 }
 
 /* Ảnh báo cáo dạng sách (phương án C, David chốt 24/11/2026): 66 sách thành 2 cột, ô tên sách bo góc
