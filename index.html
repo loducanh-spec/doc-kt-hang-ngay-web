@@ -40,7 +40,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 #flap{position:absolute;top:0;bottom:0;left:0;width:100%;display:none;pointer-events:none;transform-origin:0 0;will-change:transform;
   background:linear-gradient(to right,color-mix(in srgb,var(--page) 88%,#000) 0%,color-mix(in srgb,var(--page) 92%,#fff) 55%,color-mix(in srgb,var(--page) 80%,#fff) 90%,color-mix(in srgb,var(--page) 70%,#000) 100%)}
 .clip{position:absolute;left:22px;top:12px;overflow:hidden}
-.flow,.measure{font-family:var(--serif),'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',serif;font-size:var(--fs);line-height:var(--lhpx,var(--lh));text-align:justify;hyphens:none;overflow-wrap:break-word}
+.flow,.measure{font-family:var(--serif),'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic','PingFang SC','Noto Serif SC','Noto Sans SC','Microsoft YaHei',serif;font-size:var(--fs);line-height:var(--lhpx,var(--lh));text-align:justify;hyphens:none;overflow-wrap:break-word}
 .measure{position:absolute;left:-9999px;top:0;visibility:hidden;overflow:hidden;column-gap:44px;column-fill:auto}.measure i{font-style:normal}
 .clip{contain:strict}
 .txt.cont{text-align-last:justify}.per.cont{text-align-last:auto}.per.cont .v:last-child{text-align-last:justify}
@@ -270,8 +270,8 @@ em.s2{font-style:normal;color:var(--mute);font-size:.9em}
   <!-- Cài đặt -->
   <div class="sheet" id="shSet">
     <div class="setHead"><b>Hiển thị</b><button class="btn pri sm" data-shclose>Xong</button></div>
-    <div class="row"><label>Ngôn ngữ đọc</label><select id="langSel" class="lsel"><option value="vi">Tiếng Việt (Truyền Thống 1925)</option><option value="ko">한국어 (개역한글 1961)</option><option value="en">English (King James 1611/1769)</option><option value="fr">Français (Louis Segond 1910)</option></select></div>
-    <div class="row"><label>Song ngữ: hiện thêm bản dịch dưới mỗi câu</label><select id="lang2Sel" class="lsel"><option value="">Tắt</option><option value="vi">Tiếng Việt</option><option value="ko">한국어</option><option value="en">English</option><option value="fr">Français</option></select></div>
+    <div class="row"><label>Ngôn ngữ đọc</label><select id="langSel" class="lsel"><option value="vi">Tiếng Việt (Truyền Thống 1925)</option><option value="ko">한국어 (개역한글 1961)</option><option value="en">English (King James 1611/1769)</option><option value="fr">Français (Louis Segond 1910)</option><option value="zh">中文简体 (和合本 1919)</option></select></div>
+    <div class="row"><label>Song ngữ: hiện thêm bản dịch dưới mỗi câu</label><select id="lang2Sel" class="lsel"><option value="">Tắt</option><option value="vi">Tiếng Việt</option><option value="ko">한국어</option><option value="en">English</option><option value="fr">Français</option><option value="zh">中文简体</option></select></div>
     <div class="row"><label>Nền</label><div class="seg" id="segTheme"><button class="btn" data-v="light">Sáng</button><button class="btn" data-v="sepia">Sepia</button><button class="btn" data-v="brown">Nâu tối</button><button class="btn" data-v="black">Đen</button></div></div>
     <div class="row"><label>Kiểu chữ</label><div class="fontSeg" id="segFont"><button class="btn" data-v="literata" style="font-family:'Literata',serif">Literata</button><button class="btn" data-v="noto" style="font-family:'Noto Serif',serif">Noto Serif</button><button class="btn" data-v="lora" style="font-family:'Lora',serif">Lora</button><button class="btn" data-v="bvp" style="font-family:'Be Vietnam Pro',sans-serif">Be Vietnam</button></div></div>
     <div class="row"><label>Cỡ chữ</label><div class="seg"><button class="btn" id="fsDn">A−</button><span class="val" id="fsShow"></span><button class="btn" id="fsUp">A+</button></div></div>
@@ -312,7 +312,7 @@ const store={get(k,d){try{const v=localStorage.getItem('dkt.'+k);return v?JSON.p
 let B=[], chList=[];                     // B[b]=[name,id,chapters]; chList = flat [b,c]
 const set=Object.assign({t:'brown',ff:'literata',fs:21,lh:1.6,per:0,rate:1,full:0,voice:'',lang:'vi',lang2:''},store.get('set',{}));
 /* Ngôn ngữ: VB = bản 1925 (luôn tải, dùng cho kế hoạch và ảnh báo cáo); B = bản đang đọc; B2 = bản song ngữ */
-const LANGS={vi:{f:'vie1925.json',tts:'vi-VN',n:'Tiếng Việt'},ko:{f:'krv1961.json',tts:'ko-KR',n:'한국어'},en:{f:'kjv.json',tts:'en-US',n:'English'},fr:{f:'lsg1910.json',tts:'fr-FR',n:'Français'}};
+const LANGS={vi:{f:'vie1925.json',tts:'vi-VN',n:'Tiếng Việt'},ko:{f:'krv1961.json',tts:'ko-KR',n:'한국어'},en:{f:'kjv.json',tts:'en-US',n:'English'},zh:{f:'cuvs1919.json',tts:'zh-CN',n:'中文'},fr:{f:'lsg1910.json',tts:'fr-FR',n:'Français'}};
 const LDATA={};let VB=null,B2=null;
 function loadLang(code){if(LDATA[code])return Promise.resolve(LDATA[code]);return fetch(LANGS[code].f).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(d=>LDATA[code]=d)}
 const CAP=window.capacitorExports, NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
@@ -365,11 +365,15 @@ function measure(b,c,g){
   Object.assign(m.style,{width:g.cw+'px',height:g.ch+'px',columnWidth:g.cw+'px'});
   const nv=Math.max(vs.length,v2s?v2s.length:0);
   /* mỗi từ là [chữ, 0: bản chính | 1: bản song ngữ | 2: xuống dòng] */
-  const words=Array.from({length:nv},(_,i)=>{const a=(vs[i]||'').split(' ').filter(Boolean).map(w=>[w,0]);
-    const t2=v2s&&v2s[i];if(t2){const bb=t2.split(' ').filter(Boolean).map(w=>[w,1]);return a.concat(a.length?[['',2]]:[],bb)}return a});
+  /* tách từ; chữ Hán (tiếng Trung) không có dấu cách nên tách từng chữ, t[2]=1: không chèn dấu cách phía trước */
+  const CJK=/[\u3000-\u303f\u3400-\u9fff\uf900-\ufaff\uff00-\uffef]/;
+  const tk=(txt,f)=>{const o=[];(txt||'').split(' ').filter(Boolean).forEach(w=>{if(CJK.test(w))[...w].forEach((ch,j)=>o.push([ch,f,j?1:0]));else o.push([w,f,0])});return o};
+  const words=Array.from({length:nv},(_,i)=>{const a=tk(vs[i],0);
+    const t2=v2s&&v2s[i];if(t2){const bb=tk(t2,1);return a.concat(a.length?[['',2]]:[],bb)}return a});
   const tok=t=>t[1]===2?'<br>':`<i>${t[1]?'<em class="s2">'+esc(t[0])+'</em>':esc(t[0])}</i>`;
+  const jn=(ts,f)=>ts.map((t,j)=>(j&&!t[2]&&t[1]!==2&&ts[j-1][1]!==2?' ':'')+f(t)).join('');
   m.innerHTML=head(b,c)+`<p class="txt${set.per||B2?' per':''}">`+words.map((ws,i)=>ws.length?
-    `<span class="v"><sup>${vlabel(b,c,i+1)}</sup>`+ws.map(tok).join(' ')+' </span>':'').join('')+'</p>';
+    `<span class="v"><sup>${vlabel(b,c,i+1)}</sup>`+jn(ws,tok)+' </span>':'').join('')+'</p>';
   document.body.appendChild(m);
   const left=m.getBoundingClientRect().left, step=g.cw+g.G;
   const col=el=>{const r=el.getClientRects()[0];return r?Math.max(0,Math.floor((r.left-left+2)/step)):0};
@@ -384,7 +388,7 @@ function measure(b,c,g){
     vp.push(wp[i].length?wp[i][0]:vp[vp.length-1]);
     let p0=-1,buf=[];
     const flush=(p,last)=>{if(p<0)return;const first=p===(wp[i][0]||0);
-      const txt=buf.map(t=>t[1]===2?'<br>':t[1]?'<em class="s2">'+esc(t[0])+'</em>':esc(t[0])).join(' ').replace(/ <br> /g,'<br>');
+      const txt=jn(buf,t=>t[1]===2?'<br>':t[1]?'<em class="s2">'+esc(t[0])+'</em>':esc(t[0]));
       parts[p].push({html:`<span class="${cls}" data-k="${k}" data-v="${v}"${last?' data-e="1"':''}>${first?`<sup>${vlabel(b,c,v)}</sup>`:''}${txt}${last&&h&&h.n?'<span class="nt">✎</span>':''} </span>`,cont:!last})};
     ws.forEach((w,j)=>{const p=wp[i][j];if(p!==p0){flush(p0,false);buf=[];p0=p}buf.push(w)});
     flush(p0,true);});
@@ -1016,7 +1020,7 @@ async function renderAbout(){
       <dt>Tính năng</dt><dd><small>Lật trang cong giấy · tô 4 màu và ghi chú · tìm kiếm có dấu/không dấu · đọc thành tiếng (chạy nền trên Android) · 3 nền màu · lịch sử đọc · sao lưu, đồng bộ.</small></dd>
     </dl></div>`;
 }
-const WEB_UPDATED='26/11/2026 (bản 2)';
+const WEB_UPDATED='26/11/2026 (bản 3)';
 
 /* ---------- Nút Back của Android ---------- */
 if(AppP)AppP.addListener('backButton',()=>{
