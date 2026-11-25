@@ -16,7 +16,7 @@ Có **tài khoản thành viên** (email/mật khẩu): mỗi người một k�
 - **Tài khoản:** dùng chung dự án Firebase `kinh-thanh-1925-cb877` (một tài khoản dùng được cả hai app), nhưng dữ liệu lưu ở **`dkt/<uid>`** (field `data` = JSON `{...payload(), app:'doc-kt-hang-ngay', plan}`), không đụng `users/<uid>` của bản 1925. Cần quy tắc Firestore `match /dkt/{uid} { allow read, write: if request.auth != null && request.auth.uid == uid; }`.
 - Gộp kế hoạch giữa các máy: `mergePlan()`. Nhật ký theo ngày lấy bản đọc nhiều hơn; `plans` thêm ngày còn thiếu; `rounds` hợp nhất; `goal/start/pos/speed` lấy theo `tp` (giờ người dùng đổi tiến độ hoặc mục tiêu) mới hơn; vừa đăng nhập (`force`) thì lấy của tài khoản.
 - Đăng xuất xóa sạch dữ liệu trên máy (kể cả kế hoạch), dữ liệu vẫn còn trong tài khoản.
-- Thẻ tài khoản `#rowAcct` nằm ở màn hình chính: tab Kế hoạch; tab Hôm nay (đặt lên đầu) khi chưa đăng nhập (`placeAcct()`).
+- **4 tab** (26/11/2026): Kinh Thánh (`htab='today'`: phần đọc hôm nay + thẻ đọc sách giấy, không có phần báo cáo), Báo cáo, Kế hoạch (mục tiêu, số liệu năm, đoạn kế tiếp, tốc độ), Tài khoản (`htab='acct'`: thẻ đăng nhập `#rowAcct` đặt đầu trang qua `placeAcct()`, hồ sơ cá nhân, thông tin tài khoản khi đã đăng nhập). Tiêu đề đầu trang 1 dòng (`clamp`, `nowrap`). Chọn màu ảnh báo cáo bằng lưới ô màu `.palBtn` (không dùng danh sách thả xuống vì chữ trong danh sách hệ thống không thu nhỏ được).
 - Tô màu, ghi chú, tìm kiếm, Drive đang ẩn bằng CSS; `toggleSel()` trả về ngay.
 - Công cụ thử (dữ liệu mẫu, sang ngày mai, tới Khải-huyền 22, xóa dữ liệu): mở link có `#thu`.
 - Ảnh báo cáo: hiện ảnh để nhấn giữ lưu; nếu trình duyệt hỗ trợ chia sẻ file (iPhone Safari có) thì có nút "Chia sẻ…".

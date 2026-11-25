@@ -237,7 +237,7 @@ em.s2{font-style:normal;color:var(--mute);font-size:.9em}
   <section id="pHome" class="on">
     <div class="hTop"><small id="hDate"></small><h1>Đọc Kinh Thánh hằng ngày</h1></div>
     <div id="hScroll">
-    <div class="row acct" id="rowAcct" hidden><label>Tài khoản thành viên: mỗi người một kế hoạch riêng, lưu lên mạng, mở trên máy nào cũng đọc tiếp được</label>
+    <div class="row acct" id="rowAcct" hidden><label>Đăng nhập</label>
       <div id="acStatus" class="drvSt"></div>
       <div id="acForm"><input id="acEmail" type="email" autocomplete="username" placeholder="Email" inputmode="email" autocapitalize="off">
         <input id="acPass" type="password" autocomplete="current-password" placeholder="Mật khẩu (ít nhất 6 ký tự)">
@@ -247,7 +247,7 @@ em.s2{font-style:normal;color:var(--mute);font-size:.9em}
     </div>
       <div id="hBody"><p class="note">Đang tải Kinh Thánh…</p></div>
     </div>
-    <nav class="hTabs"><button data-h="today" class="on">Hôm nay</button><button data-h="report">Báo cáo</button><button data-h="plan">Kế hoạch</button></nav>
+    <nav class="hTabs"><button data-h="today" class="on">Kinh Thánh</button><button data-h="report">Báo cáo</button><button data-h="plan">Kế hoạch</button><button data-h="acct">Tài khoản</button></nav>
   </section>
   <div id="hModal"></div>
 
@@ -936,7 +936,7 @@ function renderAcct(msg){
   $('#rowAcct').hidden=NATIVE;if(NATIVE)return;
   const on=!!acct.uid;$('#acForm').hidden=on;$('#acOn').hidden=!on;
   $('#acStatus').textContent=msg||(!acOK()?'Chưa cấu hình máy chủ tài khoản.':on?'Đang dùng: '+acct.email+(acct.last?' · đồng bộ lúc '+hhmm(acct.last):'')+(acct.err?' · '+acct.err:''):
-    'Chưa đăng nhập: kế hoạch và tiến độ chỉ lưu trên máy này. Ai đã có tài khoản ở bản web Kinh Thánh 1925 thì đăng nhập luôn được.');
+    'Chưa đăng nhập: kế hoạch và tiến độ chỉ lưu trên máy này. Đăng nhập để lưu lên mạng và đọc tiếp trên máy khác. Tài khoản ở bản web Kinh Thánh 1925 dùng được luôn.');
   $('#acOut').textContent='Đăng xuất';acOutArm=0;
 }
 function acctSoon(){if(!acOK()||!acct.uid)return;clearTimeout(acT);acT=setTimeout(()=>acctSync(false),4000)}
@@ -1016,7 +1016,7 @@ async function renderAbout(){
       <dt>Tính năng</dt><dd><small>Lật trang cong giấy · tô 4 màu và ghi chú · tìm kiếm có dấu/không dấu · đọc thành tiếng (chạy nền trên Android) · 3 nền màu · lịch sử đọc · sao lưu, đồng bộ.</small></dd>
     </dl></div>`;
 }
-const WEB_UPDATED='25/11/2026 (bản 3)';
+const WEB_UPDATED='26/11/2026';
 
 /* ---------- Nút Back của Android ---------- */
 if(AppP)AppP.addListener('backButton',()=>{
@@ -1190,7 +1190,7 @@ function yearCard(y){const done=yearCh(y),goal=PL.goal*NCH,pct=Math.min(100,done
     <div class="bar"><i style="width:${pct}%;background:var(--gr)"></i></div>
     <div class="lbl">Mục tiêu ${PL.goal} lần (${goal.toLocaleString('vi-VN')} đoạn). ${yb0?'Gồm '+(yb0.r*NCH+yb0.c).toLocaleString('vi-VN')+' đoạn đã khai báo đọc trước khi dùng app.':''}</div></div>`}
 const profName=()=>PL.prof&&PL.prof.name||'';
-function needProfile(msg){htab='plan';renderHome();toast(msg||'Hãy khai họ tên trong mục Hồ sơ cá nhân');setTimeout(()=>{const e=$('#hName');if(e)e.focus()},300)}
+function needProfile(msg){htab='acct';renderHome();toast(msg||'Hãy khai họ tên trong mục Hồ sơ cá nhân');setTimeout(()=>{const e=$('#hName');if(e)e.focus()},300)}
 function cell(s,isT,extra){return `d ${extra||''} ${s===2?(isT?'co':'cg'):s===1?(isT?'cpo':'cpg'):''}`}
 function renderHome(){
   placeAcct();
@@ -1206,8 +1206,7 @@ function renderHome(){
       <div class="bar"><i style="width:${pct}%"></i></div>
       <div class="lbl">${done?'Đã xong phần hôm nay. Đọc thêm sẽ giảm phần những ngày sau.':'Đã đọc '+pct+'%'}</div>
       <div style="margin-top:14px"><button class="hbtn ${done?'alt':'or'}" id="hGo">${!L.c&&PL.pos===p.from?'Bắt đầu đọc':'Đọc tiếp'}: ${cname(PL.pos)}</button></div></div>
-      ${paperCard()}${ringCard(y)}${bookCard()}
-      <div class="card"><div class="lbl" style="margin-bottom:8px">7 ngày gần đây</div><div class="week">${wk}</div></div>
+      ${paperCard()}
       <p class="note">Mục tiêu ${PL.goal} lần/năm. Phần đọc mỗi ngày được tính lại theo số chữ còn lại và số ngày còn lại trong năm.</p>`;
     $('#hGo').onclick=continueReading;bindPaper();
   }
@@ -1222,25 +1221,37 @@ function renderHome(){
       <div class="legend"><span><i style="background:var(--or)"></i>Hôm nay, đã đọc xong</span><span><i style="border-color:var(--or)"></i>Hôm nay, đọc dở</span><span><i style="background:var(--gr)"></i>Đã đọc xong</span><span><i style="border-color:var(--gr)"></i>Đọc dở</span><span><i style="background:var(--hg)"></i>Chưa đọc</span></div></div>
       <div class="stats"><div class="stat"><b>${cnt}</b><span>ngày trong tháng</span></div><div class="stat"><b>${yd}</b><span>ngày năm ${y}</span></div><div class="stat"><b>${streak()}</b><span>ngày liên tiếp</span></div></div>
       <div class="card"><div class="lbl" style="margin-bottom:8px">Đã đọc trọn Kinh Thánh năm ${y}</div>${ybOf(y)&&ybOf(y).r?`<div class="chips" style="margin-bottom:8px"><span class="chip">Lần 1–${ybOf(y).r}: khai báo trước khi dùng app</span></div>`:''}${rs.length?'<div class="chips">'+rs.map(r=>`<span class="chip">Lần ${r.n} năm ${r.y} · ${dparse(r.d).getDate()}/${dparse(r.d).getMonth()+1}</span>`).join('')+'</div>':'<div class="lbl">Chưa có lần nào đọc trọn trong app. Đang đọc lần '+curRound(y)+', được '+fmtPct(roundPct())+'.</div>'}</div>
-      <div class="card"><div class="fld" style="margin-top:-12px"><label for="hPal">Màu ảnh báo cáo (đọc hôm nay / đã đọc ngày trước)</label><select id="hPal">${PALS.map((x,i)=>`<option value="${i}" ${i===palIdx()?'selected':''}>${x[0]}</option>`).join('')}</select></div>
-      <div class="palPrev"><span style="background:${pal()[1]}">Hôm nay</span><span style="background:${pal()[2]}">Ngày trước</span></div></div>
+      <div class="card"><div class="lbl">Màu ảnh báo cáo (ô trái: đọc hôm nay, ô phải: ngày trước)</div>
+      <div class="palGrid">${PALS.map((x,i)=>`<button class="palBtn${i===palIdx()?' on':''}" data-pal="${i}" aria-label="${x[0]}"><i style="background:${x[1]}"></i><i style="background:${x[2]}"></i></button>`).join('')}</div>
+      <p class="hint">Đang chọn: <b>${pal()[0]}</b></p></div>
       <button class="hbtn or" id="hShareT">Lưu ảnh báo cáo · Chia sẻ</button>
       <button class="hbtn alt" id="hShareG" style="margin-top:10px">Ảnh báo cáo dạng vòng tròn</button>
       <button class="hbtn alt" id="hShare" style="margin-top:10px">Ảnh báo cáo dạng lịch tháng</button>`;
     $('#hPm').onclick=()=>{hmonth=new Date(y,m-1,1);renderHome()};$('#hNm').onclick=()=>{hmonth=new Date(y,m+1,1);renderHome()};
     $('#hShare').onclick=()=>{if(!profName())return needProfile('Hãy khai họ tên trước, để ảnh báo cáo ghi rõ của ai');shareImg(y,m,cnt,yd,rs)};
     $('#hShareT').onclick=()=>shareTable();
-    $('#hPal').onchange=e=>{PL.rc=+e.target.value;touch();psave();renderHome()};
+    $$('#pHome .palBtn').forEach(x=>x.onclick=()=>{PL.rc=+x.dataset.pal;touch();psave();renderHome()});
     $('#hShareG').onclick=()=>{if(!profName())return needProfile('Hãy khai họ tên trước, để ảnh báo cáo ghi rõ của ai');shareGrid()};
+  }
+  if(htab==='acct'){
+    const pf=PL.prof||{},on=!!acct.uid,y=t.getFullYear(),days=Object.keys(PL.log).filter(x=>dayState(x)===2).length;
+    body.innerHTML=`<div class="card"><div class="lbl">Hồ sơ cá nhân</div>
+      <div class="fld"><label for="hName">Họ và tên thật</label><input id="hName" autocomplete="name" maxlength="60" value="${esc(pf.name||'')}" placeholder="Ví dụ: Nguyễn Văn An"></div>
+      <div class="fld"><label for="hGroup">Hội thánh / nhóm (không bắt buộc)</label><input id="hGroup" maxlength="60" value="${esc(pf.group||'')}" placeholder="Ví dụ: Nhóm thanh niên"></div>
+      <div style="margin-top:12px"><button class="hbtn" id="hPfSave">Lưu hồ sơ</button></div>
+      <p class="hint">${on?'Hồ sơ lưu cùng tài khoản.':'Chưa đăng nhập: hồ sơ chỉ lưu trên máy này.'}</p></div>
+      ${on?`<div class="card"><div class="lbl">Thông tin tài khoản</div><dl class="info">
+        <dt>Họ tên</dt><dd>${esc(pf.name||'(chưa khai)')}</dd><dt>Nhóm</dt><dd>${esc(pf.group||'—')}</dd><dt>Email</dt><dd>${esc(acct.email)}</dd>
+        <dt>Bắt đầu dùng app</dt><dd>${dparse(PL.start).getDate()}/${dparse(PL.start).getMonth()+1}/${dparse(PL.start).getFullYear()}</dd>
+        <dt>Đang đọc</dt><dd>Lần ${curRound(y)} năm ${y} · ${fmtPct(roundPct())}</dd><dt>Số ngày đã đọc xong</dt><dd>${days} ngày</dd>
+        <dt>Đồng bộ gần nhất</dt><dd>${acct.last?hhmm(acct.last):'chưa đồng bộ'}</dd></dl></div>`:''}`;
+    $('#hPfSave').onclick=()=>{const name=$('#hName').value.trim().replace(/\s+/g,' '),group=$('#hGroup').value.trim().replace(/\s+/g,' ');
+      if(name.length<2){toast('Hãy nhập họ và tên thật');$('#hName').focus();return}
+      PL.prof={name,group,t:Date.now()};psave();renderHome();toast('Đã lưu hồ sơ')};
   }
   if(htab==='plan'){
     const t0=today(),yy=t0.getFullYear(),left=ddiff(t0,new Date(yy+1,0,1)),remC=Math.max(0,yearTarget(yy)-readIn(yy,dkey(t0))),per=remC/left,ch=Math.round(per/(TOTAL/NCH)),mm=mins(per),[cb,cc]=chList[PL.pos];
-    const pf=PL.prof||{};
-    body.innerHTML=`<div class="card"><div class="lbl">Hồ sơ cá nhân</div>
-      <div class="fld"><label for="hName">Họ và tên thật (hiện trên ảnh báo cáo gửi mục sư)</label><input id="hName" autocomplete="name" maxlength="60" value="${esc(pf.name||'')}" placeholder="Ví dụ: Nguyễn Văn An"></div>
-      <div class="fld"><label for="hGroup">Hội thánh / nhóm (không bắt buộc)</label><input id="hGroup" maxlength="60" value="${esc(pf.group||'')}" placeholder="Ví dụ: Nhóm thanh niên"></div>
-      <div style="margin-top:12px"><button class="hbtn" id="hPfSave">Lưu hồ sơ</button></div>
-      <p class="hint">${acct.uid?'Hồ sơ lưu cùng tài khoản '+esc(acct.email)+'.':'Chưa đăng nhập: hồ sơ chỉ lưu trên máy này.'}</p></div>
+    body.innerHTML=`
       <div class="card"><div class="lbl">Số liệu năm ${t.getFullYear()} (khai báo phần đã đọc trước khi dùng app)</div>
       <div class="hrow fld"><div><label for="hYr">Đã đọc trọn trong năm nay</label><input id="hYr" type="number" min="0" max="100" inputmode="numeric" value="${ybOf(t.getFullYear())?ybOf(t.getFullYear()).r:0}"></div><div style="flex:.7;padding-bottom:12px">lần</div></div>
       <p class="hint">Lần đang đọc dở: chọn đúng đoạn kế tiếp cần đọc ở mục bên dưới. Sau đó bấm Lưu.</p>
@@ -1262,9 +1273,6 @@ function renderHome(){
       const appThisRound=PL.rounds.some(x=>x.y===y)?PL.pos:Math.min(PL.pos,appChIn(y)); // đoạn của lần này đã đọc trong app thì không tính lại
       PL.yb=PL.yb||{};PL.yb[y]={r,c:Math.max(0,PL.pos-appThisRound),t:Date.now()};
       if(PL.goal<r+1)PL.goal=r+1;touch();delete PL.plans[dkey(today())];psave();renderHome();toast('Đã lưu số liệu năm '+y)};
-    $('#hPfSave').onclick=()=>{const name=$('#hName').value.trim().replace(/\s+/g,' '),group=$('#hGroup').value.trim().replace(/\s+/g,' ');
-      if(name.length<2){toast('Hãy nhập họ và tên thật');$('#hName').focus();return}
-      PL.prof={name,group,t:Date.now()};psave();renderHome();toast('Đã lưu hồ sơ')};
     const sb=$('#hSb'),sc=$('#hSc');
     const fill=()=>{const b=+sb.value;sc.innerHTML=B[b][2].map((_,c)=>`<option value="${c}" ${b===cb&&c===cc?'selected':''}>${c+1}</option>`).join('')};fill();
     const setPos=()=>{PL.pos=chIdx(+sb.value,+sc.value);touch();delete PL.plans[dkey(today())];psave()};
@@ -1397,9 +1405,9 @@ function openPaper(){
 }
 
 /* Bộ màu cho ảnh báo cáo (David chốt 25/11/2026: bộ có sẵn, đổi 2 màu, chỉ áp dụng cho ảnh báo cáo). [tên, hôm nay, ngày trước] */
-const PALS=[['Cam – Xanh lá (mặc định)','#f7941d','#22e022'],['Đỏ hồng – Xanh dương nhạt','#ff6b6b','#74b9ff'],['Vàng – Xanh ngọc','#ffd43b','#38d9a9'],
-  ['Tím nhạt – Vàng chanh','#c77dff','#d8f35a'],['Hồng – Xanh da trời','#ff8cc6','#66d9ef'],['Xanh dương – Xanh lá nhạt','#4dabf7','#8ce99a'],
-  ['Đỏ – Xám nhạt (in tiết kiệm mực)','#ff5c5c','#cfd4da'],['Cam đất – Be','#e8915b','#e3d5b8']];
+const PALS=[['Cam – Xanh lá','#f7941d','#22e022'],['Đỏ hồng – Xanh dương','#ff6b6b','#74b9ff'],['Vàng – Xanh ngọc','#ffd43b','#38d9a9'],
+  ['Tím – Vàng chanh','#c77dff','#d8f35a'],['Hồng – Xanh trời','#ff8cc6','#66d9ef'],['Xanh dương – Lá nhạt','#4dabf7','#8ce99a'],
+  ['Đỏ – Xám (ít mực)','#ff5c5c','#cfd4da'],['Cam đất – Be','#e8915b','#e3d5b8']];
 const palIdx=()=>Math.min(PALS.length-1,Math.max(0,PL.rc|0)),pal=()=>PALS[palIdx()];
 /* Ảnh báo cáo dạng bảng (mẫu Excel "Đọc lần thứ N" của David, chốt 25/11/2026): không có thông tin tài khoản,
    dòng "Đọc lần thứ N" chữ to. 66 sách 2 cột (24 sách bên trái), mỗi hàng 22 đoạn, kẻ ô đen.
@@ -1494,8 +1502,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&homeOn())
 
 /* Thẻ tài khoản: tab Kế hoạch; tab Hôm nay khi chưa đăng nhập (đặt lên đầu) */
 function placeAcct(){const a=$('#rowAcct'),sc=$('#hScroll'),bd=$('#hBody');if(!a)return;
-  const on=!!acct.uid,show=htab==='plan'||(htab==='today'&&!on);a.style.display=show?'':'none';
-  if(htab==='today'&&!on){if(a.nextElementSibling!==bd)sc.insertBefore(a,bd)}else if(bd.nextElementSibling!==a)sc.appendChild(a);
+  a.style.display=htab==='acct'?'':'none';if(a.nextElementSibling!==bd)sc.insertBefore(a,bd);
 }
 /* Gộp kế hoạch từ tài khoản (máy khác) vào máy này. force: vừa đăng nhập, lấy cài đặt của tài khoản */
 function mergePlan(r,force){
