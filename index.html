@@ -1190,7 +1190,7 @@ function yearCard(y){const done=yearCh(y),goal=PL.goal*NCH,pct=Math.min(100,done
     <div class="bar"><i style="width:${pct}%;background:var(--gr)"></i></div>
     <div class="lbl">Mục tiêu ${PL.goal} lần (${goal.toLocaleString('vi-VN')} đoạn). ${yb0?'Gồm '+(yb0.r*NCH+yb0.c).toLocaleString('vi-VN')+' đoạn đã khai báo đọc trước khi dùng app.':''}</div></div>`}
 const profName=()=>PL.prof&&PL.prof.name||'';
-function needProfile(msg){htab='acct';renderHome();toast(msg||'Hãy khai họ tên trong mục Hồ sơ cá nhân');setTimeout(()=>{const e=$('#hName');if(e)e.focus()},300)}
+function needProfile(msg){htab='acct';renderHome();toast(acct.uid?(msg||'Hãy khai họ tên trong mục Hồ sơ cá nhân'):'Hãy đăng nhập hoặc tạo tài khoản, rồi khai họ tên');setTimeout(()=>{const e=$('#hName');if(e)e.focus()},300)}
 function cell(s,isT,extra){return `d ${extra||''} ${s===2?(isT?'co':'cg'):s===1?(isT?'cpo':'cpg'):''}`}
 function renderHome(){
   placeAcct();
@@ -1235,17 +1235,17 @@ function renderHome(){
   }
   if(htab==='acct'){
     const pf=PL.prof||{},on=!!acct.uid,y=t.getFullYear(),days=Object.keys(PL.log).filter(x=>dayState(x)===2).length;
-    body.innerHTML=`<div class="card"><div class="lbl">Hồ sơ cá nhân</div>
+    body.innerHTML=!on?'':`<div class="card"><div class="lbl">Hồ sơ cá nhân</div>
       <div class="fld"><label for="hName">Họ và tên thật</label><input id="hName" autocomplete="name" maxlength="60" value="${esc(pf.name||'')}" placeholder="Ví dụ: Nguyễn Văn An"></div>
       <div class="fld"><label for="hGroup">Hội thánh / nhóm (không bắt buộc)</label><input id="hGroup" maxlength="60" value="${esc(pf.group||'')}" placeholder="Ví dụ: Nhóm thanh niên"></div>
       <div style="margin-top:12px"><button class="hbtn" id="hPfSave">Lưu hồ sơ</button></div>
-      <p class="hint">${on?'Hồ sơ lưu cùng tài khoản.':'Chưa đăng nhập: hồ sơ chỉ lưu trên máy này.'}</p></div>
+      <p class="hint">Hồ sơ lưu cùng tài khoản.</p></div>
       ${on?`<div class="card"><div class="lbl">Thông tin tài khoản</div><dl class="info">
         <dt>Họ tên</dt><dd>${esc(pf.name||'(chưa khai)')}</dd><dt>Nhóm</dt><dd>${esc(pf.group||'—')}</dd><dt>Email</dt><dd>${esc(acct.email)}</dd>
         <dt>Bắt đầu dùng app</dt><dd>${dparse(PL.start).getDate()}/${dparse(PL.start).getMonth()+1}/${dparse(PL.start).getFullYear()}</dd>
         <dt>Đang đọc</dt><dd>Lần ${curRound(y)} năm ${y} · ${fmtPct(roundPct())}</dd><dt>Số ngày đã đọc xong</dt><dd>${days} ngày</dd>
         <dt>Đồng bộ gần nhất</dt><dd>${acct.last?hhmm(acct.last):'chưa đồng bộ'}</dd></dl></div>`:''}`;
-    $('#hPfSave').onclick=()=>{const name=$('#hName').value.trim().replace(/\s+/g,' '),group=$('#hGroup').value.trim().replace(/\s+/g,' ');
+    if(on)$('#hPfSave').onclick=()=>{const name=$('#hName').value.trim().replace(/\s+/g,' '),group=$('#hGroup').value.trim().replace(/\s+/g,' ');
       if(name.length<2){toast('Hãy nhập họ và tên thật');$('#hName').focus();return}
       PL.prof={name,group,t:Date.now()};psave();renderHome();toast('Đã lưu hồ sơ')};
   }
