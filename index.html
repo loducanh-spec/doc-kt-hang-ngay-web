@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Đọc KT">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#173042">
+<meta name="theme-color" content="#4a3427">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="fonts/fonts.css">
@@ -235,7 +235,7 @@ em.s2{font-style:normal;color:var(--mute);font-size:.9em}
 
   <!-- Màn hình chính: Hôm nay / Báo cáo / Kế hoạch -->
   <section id="pHome" class="on">
-    <div class="hTop"><small id="hDate"></small><h1>Đọc Kinh Thánh hằng ngày</h1></div>
+    <div class="hTop"><small id="hDate"></small><h1 id="hTitle">Kinh Thánh</h1></div>
     <div id="hScroll">
     <div class="row acct" id="rowAcct" hidden><label>Đăng nhập</label>
       <div id="acStatus" class="drvSt"></div>
@@ -247,7 +247,7 @@ em.s2{font-style:normal;color:var(--mute);font-size:.9em}
     </div>
       <div id="hBody"><p class="note">Đang tải Kinh Thánh…</p></div>
     </div>
-    <nav class="hTabs"><button data-h="today" class="on">Kinh Thánh</button><button data-h="report">Báo cáo</button><button data-h="plan">Kế hoạch</button><button data-h="acct">Tài khoản</button></nav>
+    <nav class="hTabs"><button data-h="today" class="on"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h5v17H6a2 2 0 01-2-2z"/><path d="M20 5a2 2 0 00-2-2h-5v17h5a2 2 0 002-2z"/></svg>Kinh Thánh</button><button data-h="report"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Báo cáo</button><button data-h="plan"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Kế hoạch</button><button data-h="acct"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/></svg>Tài khoản</button></nav>
   </section>
   <div id="hModal"></div>
 
@@ -1016,7 +1016,7 @@ async function renderAbout(){
       <dt>Tính năng</dt><dd><small>Lật trang cong giấy · tô 4 màu và ghi chú · tìm kiếm có dấu/không dấu · đọc thành tiếng (chạy nền trên Android) · 3 nền màu · lịch sử đọc · sao lưu, đồng bộ.</small></dd>
     </dl></div>`;
 }
-const WEB_UPDATED='26/11/2026';
+const WEB_UPDATED='26/11/2026 (bản 2)';
 
 /* ---------- Nút Back của Android ---------- */
 if(AppP)AppP.addListener('backButton',()=>{
@@ -1155,13 +1155,14 @@ function showModal(html,acts){const m=$('#hModal');m.innerHTML='<div class="mbox
   m.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>acts[b.dataset.a]())}
 function hideModal(){$('#hModal').classList.remove('on');$('#hModal').innerHTML=''}
 
-let htab='today',hmonth=null;
+let htab='today',hmonth=null,acctEdit=false;
 function openHome(){closeAll();if(tts)ttsStop();$('#pHome').classList.add('on');renderHome()}
 function hideHome(){$('#pHome').classList.remove('on')}
 const homeOn=()=>$('#pHome').classList.contains('on');
+function readerHint(){if(!store.get('hint3',0)){store.set('hint3',1);setTimeout(()=>toast('Vuốt ngang để lật trang · Chạm thanh dưới cùng để mở menu · Nút hình ngôi nhà để về màn hình chính'),500)}}
 function continueReading(){
   const [b,c]=chList[PL.pos];const v=chIdx(pos.b,pos.c)===PL.pos?pos.v:1;
-  hideHome();lastCi=null;go(b,c,v);
+  hideHome();lastCi=null;go(b,c,v);readerHint();
 }
 /* Tiến độ lần đọc hiện tại (Sáng-thế Ký 1 → Khải-huyền 22) và vòng tròn tiến độ */
 const roundPct=()=>CUM[PL.pos]/TOTAL*100;
@@ -1196,19 +1197,22 @@ function renderHome(){
   placeAcct();
   const body=$('#hBody');if(!NCH){body.innerHTML='<p class="note">Đang tải Kinh Thánh…</p>';return}
   const t=today(),k=dkey(t),p=plan(t),L=PL.log[k]||{c:0};
-  $('#hDate').textContent=fmtD(t)+(PL.off&&TEST?' (ngày giả lập)':'')+(profName()?' · '+profName():'');
+  $('#hDate').textContent='Đọc KT Hằng Ngày · '+fmtD(t)+(PL.off&&TEST?' (giả lập)':'');
+  $('#hTitle').textContent={today:'Kinh Thánh',report:'Báo cáo',plan:'Kế hoạch',acct:'Tài khoản'}[htab]+(htab==='acct'&&profName()?' · '+profName():'');
   $$('#pHome .hTabs button').forEach(b=>b.classList.toggle('on',b.dataset.h===htab));
   if(htab==='today'){
     const pct=todayPct(),done=dayState(k)===2,y=t.getFullYear(),yr=PL.rounds.filter(r=>r.y===y).length;
     let wk='';for(let i=6;i>=0;i--){const d=addD(t,-i);wk+=`<div><div class="${cell(dayState(dkey(d)),!i)}">${d.getDate()}</div>${DOW[d.getDay()]}</div>`}
-    body.innerHTML=`<div class="card"><div class="lbl">Phần đọc hôm nay · ${p.n} đoạn · khoảng ${hm(mins(p.q))}</div>
+    body.innerHTML=`${acct.uid?'':'<button class="nudge" id="hNudge">Chưa đăng nhập: tiến độ chỉ lưu trên máy này. <b>Đăng nhập ›</b></button>'}<div class="card"><div class="lbl">Phần đọc hôm nay · ${p.n} đoạn · khoảng ${hm(mins(p.q))}</div>
       <div class="big">${cname(p.from)}<br>đến ${cname(planEnd(p))}</div>
       <div class="bar"><i style="width:${pct}%"></i></div>
       <div class="lbl">${done?'Đã xong phần hôm nay. Đọc thêm sẽ giảm phần những ngày sau.':'Đã đọc '+pct+'%'}</div>
-      <div style="margin-top:14px"><button class="hbtn ${done?'alt':'or'}" id="hGo">${!L.c&&PL.pos===p.from?'Bắt đầu đọc':'Đọc tiếp'}: ${cname(PL.pos)}</button></div></div>
+      <div style="margin-top:14px"><button class="hbtn ${done?'alt':'or'}" id="hGo">${!L.c&&PL.pos===p.from?'Bắt đầu đọc':'Đọc tiếp'}: ${cname(PL.pos)}</button></div>
+      <button class="hbtn alt" id="hToc" style="margin-top:10px">Mở Mục lục, đọc đoạn khác</button></div>
       ${paperCard()}
       <p class="note">Mục tiêu ${PL.goal} lần/năm. Phần đọc mỗi ngày được tính lại theo số chữ còn lại và số ngày còn lại trong năm.</p>`;
-    $('#hGo').onclick=continueReading;bindPaper();
+    $('#hGo').onclick=continueReading;bindPaper();$('#hToc').onclick=()=>{hideHome();readerHint();openToc('books')};
+    const nd=$('#hNudge');if(nd)nd.onclick=()=>{htab='acct';renderHome()};
   }
   if(htab==='report'){
     if(!hmonth)hmonth=new Date(t.getFullYear(),t.getMonth(),1);
@@ -1216,52 +1220,44 @@ function renderHome(){
     let g=DOW.map(x=>`<div class="dow">${x}</div>`).join('');for(let i=0;i<first.getDay();i++)g+='<div class="d e"></div>';
     let cnt=0;for(let i=1;i<=days;i++){const d=new Date(y,m,i),kk=dkey(d),s=dayState(kk);if(s===2)cnt++;g+=`<div class="${cell(s,kk===k,d>t?'fu':'')}">${i}</div>`}
     const yd=Object.keys(PL.log).filter(x=>+x.slice(0,4)===y&&dayState(x)===2).length,rs=PL.rounds.filter(r=>r.y===y);
-    body.innerHTML=`${ringCard(y)}${bookCard()}${yearCard(y)}<div class="card"><div class="mnav"><button id="hPm" aria-label="Tháng trước">‹</button><b>Tháng ${m+1}/${y}</b><button id="hNm" aria-label="Tháng sau">›</button></div>
+    body.innerHTML=`<button class="hbtn or" id="hShareAll" style="margin-bottom:14px">Lưu ảnh báo cáo · Chia sẻ</button>${ringCard(y)}${bookCard()}${yearCard(y)}<div class="card"><div class="mnav"><button id="hPm" aria-label="Tháng trước">‹</button><b>Tháng ${m+1}/${y}</b><button id="hNm" aria-label="Tháng sau">›</button></div>
       <div class="cal">${g}</div>
       <div class="legend"><span><i style="background:var(--or)"></i>Hôm nay, đã đọc xong</span><span><i style="border-color:var(--or)"></i>Hôm nay, đọc dở</span><span><i style="background:var(--gr)"></i>Đã đọc xong</span><span><i style="border-color:var(--gr)"></i>Đọc dở</span><span><i style="background:var(--hg)"></i>Chưa đọc</span></div></div>
       <div class="stats"><div class="stat"><b>${cnt}</b><span>ngày trong tháng</span></div><div class="stat"><b>${yd}</b><span>ngày năm ${y}</span></div><div class="stat"><b>${streak()}</b><span>ngày liên tiếp</span></div></div>
       <div class="card"><div class="lbl" style="margin-bottom:8px">Đã đọc trọn Kinh Thánh năm ${y}</div>${ybOf(y)&&ybOf(y).r?`<div class="chips" style="margin-bottom:8px"><span class="chip">Lần 1–${ybOf(y).r}: khai báo trước khi dùng app</span></div>`:''}${rs.length?'<div class="chips">'+rs.map(r=>`<span class="chip">Lần ${r.n} năm ${r.y} · ${dparse(r.d).getDate()}/${dparse(r.d).getMonth()+1}</span>`).join('')+'</div>':'<div class="lbl">Chưa có lần nào đọc trọn trong app. Đang đọc lần '+curRound(y)+', được '+fmtPct(roundPct())+'.</div>'}</div>
-      <div class="card"><div class="lbl">Màu ảnh báo cáo (ô trái: đọc hôm nay, ô phải: ngày trước)</div>
-      <div class="palGrid">${PALS.map((x,i)=>`<button class="palBtn${i===palIdx()?' on':''}" data-pal="${i}" aria-label="${x[0]}"><i style="background:${x[1]}"></i><i style="background:${x[2]}"></i></button>`).join('')}</div>
-      <p class="hint">Đang chọn: <b>${pal()[0]}</b></p></div>
-      <button class="hbtn or" id="hShareT">Lưu ảnh báo cáo · Chia sẻ</button>
-      <button class="hbtn alt" id="hShareG" style="margin-top:10px">Ảnh báo cáo dạng vòng tròn</button>
-      <button class="hbtn alt" id="hShare" style="margin-top:10px">Ảnh báo cáo dạng lịch tháng</button>`;
+`;
     $('#hPm').onclick=()=>{hmonth=new Date(y,m-1,1);renderHome()};$('#hNm').onclick=()=>{hmonth=new Date(y,m+1,1);renderHome()};
-    $('#hShare').onclick=()=>{if(!profName())return needProfile('Hãy khai họ tên trước, để ảnh báo cáo ghi rõ của ai');shareImg(y,m,cnt,yd,rs)};
-    $('#hShareT').onclick=()=>shareTable();
-    $$('#pHome .palBtn').forEach(x=>x.onclick=()=>{PL.rc=+x.dataset.pal;touch();psave();renderHome()});
-    $('#hShareG').onclick=()=>{if(!profName())return needProfile('Hãy khai họ tên trước, để ảnh báo cáo ghi rõ của ai');shareGrid()};
+    $('#hShareAll').onclick=()=>openShare(y,m,cnt,yd,rs);
   }
   if(htab==='acct'){
     const pf=PL.prof||{},on=!!acct.uid,y=t.getFullYear(),days=Object.keys(PL.log).filter(x=>dayState(x)===2).length;
-    body.innerHTML=!on?'':`<div class="card"><div class="lbl">Hồ sơ cá nhân</div>
-      <div class="fld"><label for="hName">Họ và tên thật</label><input id="hName" autocomplete="name" maxlength="60" value="${esc(pf.name||'')}" placeholder="Ví dụ: Nguyễn Văn An"></div>
+    const edit=on&&(acctEdit||!pf.name);
+    body.innerHTML=!on?'':`<div class="card"><div class="lbl">Hồ sơ và tài khoản</div>
+      ${edit?`<div class="fld"><label for="hName">Họ và tên thật</label><input id="hName" autocomplete="name" maxlength="60" value="${esc(pf.name||'')}" placeholder="Ví dụ: Nguyễn Văn An"></div>
       <div class="fld"><label for="hGroup">Hội thánh / nhóm (không bắt buộc)</label><input id="hGroup" maxlength="60" value="${esc(pf.group||'')}" placeholder="Ví dụ: Nhóm thanh niên"></div>
-      <div style="margin-top:12px"><button class="hbtn" id="hPfSave">Lưu hồ sơ</button></div>
-      <p class="hint">Hồ sơ lưu cùng tài khoản.</p></div>
-      ${on?`<div class="card"><div class="lbl">Thông tin tài khoản</div><dl class="info">
-        <dt>Họ tên</dt><dd>${esc(pf.name||'(chưa khai)')}</dd><dt>Nhóm</dt><dd>${esc(pf.group||'—')}</dd><dt>Email</dt><dd>${esc(acct.email)}</dd>
+      <div style="margin-top:12px"><button class="hbtn" id="hPfSave">Lưu hồ sơ</button></div>`:
+      `<dl class="info"><dt>Họ tên</dt><dd>${esc(pf.name)}</dd><dt>Nhóm</dt><dd>${esc(pf.group||'—')}</dd></dl><button class="hbtn alt" id="hPfEdit" style="margin-top:12px">Sửa hồ sơ</button>`}
+      <dl class="info" style="border-top:1px solid var(--hl);padding-top:10px;margin-top:14px"><dt>Email</dt><dd>${esc(acct.email)}</dd>
         <dt>Bắt đầu dùng app</dt><dd>${dparse(PL.start).getDate()}/${dparse(PL.start).getMonth()+1}/${dparse(PL.start).getFullYear()}</dd>
-        <dt>Đang đọc</dt><dd>Lần ${curRound(y)} năm ${y} · ${fmtPct(roundPct())}</dd><dt>Số ngày đã đọc xong</dt><dd>${days} ngày</dd>
-        <dt>Đồng bộ gần nhất</dt><dd>${acct.last?hhmm(acct.last):'chưa đồng bộ'}</dd></dl></div>`:''}`;
-    if(on)$('#hPfSave').onclick=()=>{const name=$('#hName').value.trim().replace(/\s+/g,' '),group=$('#hGroup').value.trim().replace(/\s+/g,' ');
+        <dt>Đang đọc</dt><dd>Lần ${curRound(y)} năm ${y} · ${fmtPct(roundPct())}</dd><dt>Số ngày đã đọc xong</dt><dd>${days} ngày</dd></dl></div>`;
+    const pe=$('#hPfEdit');if(pe)pe.onclick=()=>{acctEdit=true;renderHome()};
+    if(edit)$('#hPfSave').onclick=()=>{const name=$('#hName').value.trim().replace(/\s+/g,' '),group=$('#hGroup').value.trim().replace(/\s+/g,' ');
       if(name.length<2){toast('Hãy nhập họ và tên thật');$('#hName').focus();return}
-      PL.prof={name,group,t:Date.now()};psave();renderHome();toast('Đã lưu hồ sơ')};
+      PL.prof={name,group,t:Date.now()};acctEdit=false;psave();renderHome();toast('Đã lưu hồ sơ')};
   }
   if(htab==='plan'){
     const t0=today(),yy=t0.getFullYear(),left=ddiff(t0,new Date(yy+1,0,1)),remC=Math.max(0,yearTarget(yy)-readIn(yy,dkey(t0))),per=remC/left,ch=Math.round(per/(TOTAL/NCH)),mm=mins(per),[cb,cc]=chList[PL.pos];
     body.innerHTML=`
-      <div class="card"><div class="lbl">Số liệu năm ${t.getFullYear()} (khai báo phần đã đọc trước khi dùng app)</div>
-      <div class="hrow fld"><div><label for="hYr">Đã đọc trọn trong năm nay</label><input id="hYr" type="number" min="0" max="100" inputmode="numeric" value="${ybOf(t.getFullYear())?ybOf(t.getFullYear()).r:0}"></div><div style="flex:.7;padding-bottom:12px">lần</div></div>
-      <p class="hint">Lần đang đọc dở: chọn đúng đoạn kế tiếp cần đọc ở mục bên dưới. Sau đó bấm Lưu.</p>
-      <div style="margin-top:10px"><button class="hbtn" id="hYbSave">Lưu số liệu năm ${t.getFullYear()}</button></div>
-      ${ybOf(t.getFullYear())?`<p class="hint">Đã khai báo: ${ybOf(t.getFullYear()).r} lần + ${ybOf(t.getFullYear()).c} đoạn = ${baseCh(t.getFullYear()).toLocaleString('vi-VN')} đoạn.</p>`:''}</div>
       <div class="card"><div class="lbl">Mục tiêu đọc hết Kinh Thánh cả năm ${t.getFullYear()} (tính cả phần đã đọc)</div>
       <div class="step" style="margin-top:8px"><button id="hGm" aria-label="Giảm">−</button><b>${PL.goal}</b><span>lần / năm<br><small class="lbl">= ${(PL.goal*NCH).toLocaleString('vi-VN')} đoạn</small></span><button id="hGp" aria-label="Tăng">+</button></div>
       <div style="margin-top:12px">Từ hôm nay đến hết năm (${left} ngày), mỗi ngày cần khoảng <b>${ch} đoạn</b>, đọc mất khoảng <b>${hm(mm)}</b>.</div>
       ${mm>120?'<div class="warn">Mục tiêu này cần hơn 2 giờ đọc mỗi ngày. Hãy cân nhắc trước khi chọn.</div>':''}
       ${ybOf(yy)?'':`<p class="lbl" style="margin:10px 0 0">Chưa khai báo số liệu năm: mục tiêu năm đầu tính theo số ngày còn lại kể từ ngày bắt đầu dùng app (${dparse(PL.start).getDate()}/${dparse(PL.start).getMonth()+1}/${dparse(PL.start).getFullYear()}).</p>`}</div>
+      ${ybOf(t.getFullYear())?`<details class="card ybx"><summary>Số liệu năm ${t.getFullYear()}: đã khai ${ybOf(t.getFullYear()).r} lần + ${ybOf(t.getFullYear()).c} đoạn <span>Sửa</span></summary>`:'<div class="card">'}<div class="lbl">Số liệu năm ${t.getFullYear()} (khai báo phần đã đọc trước khi dùng app)</div>
+      <div class="hrow fld"><div><label for="hYr">Đã đọc trọn trong năm nay</label><input id="hYr" type="number" min="0" max="100" inputmode="numeric" value="${ybOf(t.getFullYear())?ybOf(t.getFullYear()).r:0}"></div><div style="flex:.7;padding-bottom:12px">lần</div></div>
+      <p class="hint">Lần đang đọc dở: chọn đúng đoạn kế tiếp cần đọc ở mục bên dưới. Sau đó bấm Lưu.</p>
+      <div style="margin-top:10px"><button class="hbtn" id="hYbSave">Lưu số liệu năm ${t.getFullYear()}</button></div>
+      ${ybOf(t.getFullYear())?`<p class="hint">Đã khai báo: ${ybOf(t.getFullYear()).r} lần + ${ybOf(t.getFullYear()).c} đoạn = ${baseCh(t.getFullYear()).toLocaleString('vi-VN')} đoạn.</p>`:''}${ybOf(t.getFullYear())?'</details>':'</div>'}
       <div class="card"><div class="lbl">Đoạn kế tiếp cần đọc</div>
       <div class="hrow fld"><div><label for="hSb">Sách</label><select id="hSb">${B.map((bk,b)=>`<option value="${b}" ${b===cb?'selected':''}>${esc(bk[0])}</option>`).join('')}</select></div>
       <div style="flex:.5"><label for="hSc">Đoạn</label><select id="hSc"></select></div></div></div>
@@ -1363,10 +1359,12 @@ async function deliverImg(cv,name){
 function quickCount(){const t=today(),p=plan(t),end=p.from+p.n;const cur=PL.pos>=p.from?PL.pos:PL.pos+NCH;return cur<end?end-cur:0}
 function paperCard(){const q=quickCount(),u=PL.undo;
   return `<div class="card"><div class="lbl">Đọc bằng Kinh Thánh sách giấy?</div>
-    ${q?`<button class="hbtn" id="hPaperDone" style="margin-top:10px">Đã đọc xong phần hôm nay (${q} đoạn)</button>`:''}
+    ${q?`<button class="hbtn alt" id="hPaperDone" style="margin-top:10px">Đã đọc xong phần hôm nay (${q} đoạn)</button>`:''}
     <button class="hbtn alt" id="hPaperRep" style="margin-top:10px">Báo cáo đã đọc đến…</button>
     ${u?`<button class="hbtn alt" id="hUndo" style="margin-top:10px">Hoàn tác: ${esc(u.label)}</button>`:''}</div>`}
-function bindPaper(){const a=$('#hPaperDone');if(a)a.onclick=()=>{const q=quickCount();if(q)paperRead(today(),q)};
+function bindPaper(){const a=$('#hPaperDone');if(a)a.onclick=()=>{const q=quickCount();if(!q)return;
+    showModal(`<div class="big" style="font-size:22px">Ghi nhận đã đọc xong?</div><p class="lbl" style="font-size:15px;margin:10px 0 4px">${q} đoạn: ${esc(cname(PL.pos))}${q>1?' → '+esc(cname((PL.pos+q-1)%NCH)):''}, hôm nay.</p><button class="hbtn or" data-a="ok">Đúng, ghi nhận</button><button class="hbtn" data-a="x" style="background:transparent;color:inherit;border:1px solid #ccc">Hủy</button>`,
+      {ok:()=>{hideModal();paperRead(today(),q)},x:hideModal})};
   $('#hPaperRep').onclick=openPaper;const u=$('#hUndo');if(u)u.onclick=undoPaper}
 function paperRead(d,n){
   const k=dkey(d),snap={pos:PL.pos,rl:PL.rounds.length,k,log:PL.log[k]?JSON.parse(JSON.stringify(PL.log[k])):null,plan:PL.plans[k]?JSON.parse(JSON.stringify(PL.plans[k])):null};
@@ -1402,6 +1400,26 @@ function openPaper(){
   /* mặc định: cuối phần đọc của hôm nay (nếu còn trong cùng lần đọc), không thì đoạn đang dở */
   const p=plan(t),e=p.from+p.n-1;let def=e>=PL.pos&&e<NCH?e:PL.pos;const [db,dc]=chList[def];B1.value=db;fillC(dc);
   B1.onchange=()=>fillC(null);C1.onchange=sum;D1.onchange=sum;
+}
+
+/* Một nút "Lưu ảnh báo cáo": chọn kiểu ảnh và bộ màu ngay trong bảng (PL.rs: kiểu đã chọn lần trước) */
+function openShare(y,m,cnt,yd,rs){
+  const ST=[['table','Bảng'],['grid','Vòng tròn'],['cal','Lịch tháng']];let st=PL.rs||'table',pi=palIdx();
+  const draw=()=>{const mb=$('#hModal .mbox');if(!mb)return;
+    mb.querySelectorAll('[data-st]').forEach(x=>x.classList.toggle('on',x.dataset.st===st));
+    mb.querySelectorAll('[data-pal]').forEach(x=>x.classList.toggle('on',+x.dataset.pal===pi));
+    $('#shPalName').textContent=st==='cal'?'Ảnh lịch tháng dùng màu cố định':'Đang chọn: '+PALS[pi][0];$('#shPals').style.opacity=st==='cal'?.35:1};
+  showModal(`<div class="big" style="font-size:22px">Lưu ảnh báo cáo</div>
+    <div class="shSeg">${ST.map(([k,l])=>`<button data-st="${k}">${l}</button>`).join('')}</div>
+    <div class="lbl" style="text-align:left;margin-top:14px">Màu (ô trái: đọc hôm nay, ô phải: ngày trước)</div>
+    <div class="shPals" id="shPals">${PALS.map((x,i)=>`<button data-pal="${i}" aria-label="${x[0]}"><i style="background:${x[1]}"></i><i style="background:${x[2]}"></i></button>`).join('')}</div>
+    <p class="lbl" id="shPalName" style="margin:8px 0 0"></p>
+    <button class="hbtn or" data-a="ok">Tạo ảnh</button><button class="hbtn" data-a="x" style="background:transparent;color:inherit;border:1px solid #ccc">Hủy</button>`,
+    {ok:()=>{PL.rs=st;PL.rc=pi;touch();psave();
+      if(st!=='table'&&!profName()){hideModal();return needProfile('Ảnh này có ghi họ tên: hãy khai họ tên trước')}
+      if(st==='table')shareTable();else if(st==='grid')shareGrid();else shareImg(y,m,cnt,yd,rs)},x:hideModal});
+  $$('#hModal [data-st]').forEach(x=>x.onclick=()=>{st=x.dataset.st;draw()});
+  $$('#hModal [data-pal]').forEach(x=>x.onclick=()=>{pi=+x.dataset.pal;draw()});draw();
 }
 
 /* Bộ màu cho ảnh báo cáo (David chốt 25/11/2026: bộ có sẵn, đổi 2 màu, chỉ áp dụng cho ảnh báo cáo). [tên, hôm nay, ngày trước] */
@@ -1502,7 +1520,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&homeOn())
 
 /* Thẻ tài khoản: tab Kế hoạch; tab Hôm nay khi chưa đăng nhập (đặt lên đầu) */
 function placeAcct(){const a=$('#rowAcct'),sc=$('#hScroll'),bd=$('#hBody');if(!a)return;
-  a.style.display=htab==='acct'?'':'none';if(a.nextElementSibling!==bd)sc.insertBefore(a,bd);
+  a.style.display=htab==='acct'?'':'none';
+  if(!acct.uid){if(a.nextElementSibling!==bd)sc.insertBefore(a,bd)}else if(bd.nextElementSibling!==a)sc.appendChild(a);
 }
 /* Gộp kế hoạch từ tài khoản (máy khác) vào máy này. force: vừa đăng nhập, lấy cài đặt của tài khoản */
 function mergePlan(r,force){
@@ -1515,7 +1534,7 @@ function mergePlan(r,force){
   PL.rounds.sort((a,b)=>a.d<b.d?-1:1);
   if(r.prof&&r.prof.t&&(!PL.prof||r.prof.t>(PL.prof.t||0)||force)&&JSON.stringify(r.prof)!==JSON.stringify(PL.prof)){PL.prof=r.prof;ch=true}
   for(const [yk,v] of Object.entries(r.yb||{})){PL.yb=PL.yb||{};const l=PL.yb[yk];if(!l||(v.t||0)>(l.t||0)){PL.yb[yk]=v;ch=true}}
-  if((r.tp||0)>(PL.tp||0)||(force&&r.tp)){for(const f of ['goal','start','pos','speed','rc','tp'])if(r[f]!==undefined&&PL[f]!==r[f]){PL[f]=r[f];ch=true}}
+  if((r.tp||0)>(PL.tp||0)||(force&&r.tp)){for(const f of ['goal','start','pos','speed','rc','rs','tp'])if(r[f]!==undefined&&PL[f]!==r[f]){PL[f]=r[f];ch=true}}
   if(ch){store.set('plan',PL);lastCi=null;if(homeOn())renderHome()}
   return ch;
 }
@@ -1524,7 +1543,7 @@ fetch('vie1925.json').then(r=>r.json()).then(d=>{
   VB=LDATA.vi=d;B=d;B.forEach((bk,b)=>bk[2].forEach((_,c)=>chList.push([b,c])));initPlan();
   if(!B[pos.b]||!B[pos.b][2][pos.c])pos={b:0,c:0,v:1};
   $('#loading').remove();
-  const ready=()=>{build(pos.b,pos.c,{v:pos.v});renderHome();if(acct.uid)setTimeout(()=>acctSync(false,'boot'),800);if(!store.get('hint3',0)){store.set('hint3',1);setTimeout(()=>toast('Trong trang đọc: vuốt ngang để lật trang, chạm thanh dưới cùng để mở menu'),400)}};
+  const ready=()=>{build(pos.b,pos.c,{v:pos.v});renderHome();if(acct.uid)setTimeout(()=>acctSync(false,'boot'),800);};
   const extra=[set.lang!=='vi'?loadLang(set.lang).then(x=>{B=x}).catch(()=>{set.lang='vi'}):0,set.lang2&&set.lang2!==set.lang?loadLang(set.lang2).then(x=>{B2=x}).catch(()=>{set.lang2=''}):0];
   Promise.all([...extra,document.fonts&&document.fonts.ready?document.fonts.ready:0]).then(ready);
 }).catch(()=>{$('#loading').textContent='Không tải được dữ liệu Kinh Thánh.'});
