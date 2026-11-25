@@ -991,7 +991,7 @@ async function renderAbout(){
       <dt>Tính năng</dt><dd><small>Lật trang cong giấy · tô 4 màu và ghi chú · tìm kiếm có dấu/không dấu · đọc thành tiếng (chạy nền trên Android) · 3 nền màu · lịch sử đọc · sao lưu, đồng bộ.</small></dd>
     </dl></div>`;
 }
-const WEB_UPDATED='25/11/2026';
+const WEB_UPDATED='25/11/2026 (bản 2)';
 
 /* ---------- Nút Back của Android ---------- */
 if(AppP)AppP.addListener('backButton',()=>{
@@ -1096,10 +1096,10 @@ function plan(d){const k=dkey(d);if(!PL.plans[k]){PL.plans[k]=makePlan(d,PL.pos)
   const ks=Object.keys(PL.plans).sort();if(ks.length>800)ks.slice(0,ks.length-800).forEach(x=>delete PL.plans[x]);psave()}return PL.plans[k]}
 const planEnd=p=>(p.from+p.n-1)%NCH;
 function dayState(k){const p=PL.plans[k],l=PL.log[k];if(!l||!l.c)return 0;return p&&l.c>=p.q-1?2:1}
-function readChapter(d){
+function readChapter(d,paper){
   const k=dkey(d);plan(d);const before=dayState(k);
   const L=PL.log[k]||(PL.log[k]={c:0,ch:[]});const i=PL.pos;
-  L.c+=LEN[i];L.ch.push(i);PL.pos=(i+1)%NCH;touch();let done=null;
+  L.c+=LEN[i];L.ch.push(i);L.t=Date.now();if(paper)L.p=(L.p||0)+1;PL.pos=(i+1)%NCH;touch();let done=null;
   if(i===NCH-1){const y=d.getFullYear(),n=(ybOf(y)?ybOf(y).r:0)+PL.rounds.filter(r=>r.y===y).length+1;PL.rounds.push({y,n,d:k});done={y,n}}
   psave();return{done,dayDone:before<2&&dayState(k)===2};
 }
@@ -1148,7 +1148,7 @@ function ringSVG(v,sz){const r=42,c=2*Math.PI*r,f=v>0?Math.max(.012,v/100):0;
   <text x="50" y="50" text-anchor="middle" dominant-baseline="central" class="ringPct">${fmtPct(v)}</text></svg>`}
 /* Tình trạng một ngày, để người quản lý đọc nhanh */
 function dayInfo(k){const p=PL.plans[k],L=PL.log[k],s=dayState(k),r=L?L.ch.length:0,n=p?p.n:0;
-  return{s,txt:s===2?'Đã đọc xong'+(n?' ('+r+'/'+n+' đoạn)':' ('+r+' đoạn)'):s===1?'Đọc dở: '+r+'/'+n+' đoạn':'Chưa đọc'+(n?' (cần đọc '+n+' đoạn)':'')}}
+  return{s,paper:L&&L.p||0,txt:s===2?'Đã đọc xong'+(n?' ('+r+'/'+n+' đoạn)':' ('+r+' đoạn)'):s===1?'Đọc dở: '+r+'/'+n+' đoạn':'Chưa đọc'+(n?' (cần đọc '+n+' đoạn)':'')}}
 function ringCard(y){const v=roundPct(),k=dkey(today()),di=dayInfo(k);
   return `<div class="card ringCard">${ringSVG(v,132)}<div class="ringTx"><div class="lbl">Tiến độ lần ${curRound(y)} năm ${y}</div>
     <div class="rcBig">${PL.pos}/${NCH} đoạn</div><div class="lbl">Hôm nay: <span class="st${di.s}">${di.txt}</span></div><div class="lbl">${streak()} ngày liên tiếp · mục tiêu ${PL.goal} lần/năm</div></div></div>`}
@@ -1181,10 +1181,10 @@ function renderHome(){
       <div class="bar"><i style="width:${pct}%"></i></div>
       <div class="lbl">${done?'Đã xong phần hôm nay. Đọc thêm sẽ giảm phần những ngày sau.':'Đã đọc '+pct+'%'}</div>
       <div style="margin-top:14px"><button class="hbtn ${done?'alt':'or'}" id="hGo">${!L.c&&PL.pos===p.from?'Bắt đầu đọc':'Đọc tiếp'}: ${cname(PL.pos)}</button></div></div>
-      ${ringCard(y)}${bookCard()}
+      ${paperCard()}${ringCard(y)}${bookCard()}
       <div class="card"><div class="lbl" style="margin-bottom:8px">7 ngày gần đây</div><div class="week">${wk}</div></div>
       <p class="note">Mục tiêu ${PL.goal} lần/năm. Phần đọc mỗi ngày được tính lại theo số chữ còn lại và số ngày còn lại trong năm.</p>`;
-    $('#hGo').onclick=continueReading;
+    $('#hGo').onclick=continueReading;bindPaper();
   }
   if(htab==='report'){
     if(!hmonth)hmonth=new Date(t.getFullYear(),t.getMonth(),1);
@@ -1321,6 +1321,53 @@ async function deliverImg(cv,name){
   }
 }
 
+/* ---------- Báo cáo đọc bằng Kinh Thánh sách giấy (David chốt 25/11/2026: phương án A + 3 tiện ích) ----------
+   A: chọn "đã đọc đến Sách – Đoạn", app ghi nhận mọi đoạn từ chỗ đang dở đến đó (như đọc trong app, L.p đếm đoạn sách giấy).
+   Tiện ích: nút "Đã đọc xong phần hôm nay"; báo bù tối đa 7 ngày trước; Hoàn tác lần báo gần nhất (PL.undo). */
+function quickCount(){const t=today(),p=plan(t),end=p.from+p.n;const cur=PL.pos>=p.from?PL.pos:PL.pos+NCH;return cur<end?end-cur:0}
+function paperCard(){const q=quickCount(),u=PL.undo;
+  return `<div class="card"><div class="lbl">Đọc bằng Kinh Thánh sách giấy?</div>
+    ${q?`<button class="hbtn" id="hPaperDone" style="margin-top:10px">Đã đọc xong phần hôm nay (${q} đoạn)</button>`:''}
+    <button class="hbtn alt" id="hPaperRep" style="margin-top:10px">Báo cáo đã đọc đến…</button>
+    ${u?`<button class="hbtn alt" id="hUndo" style="margin-top:10px">Hoàn tác: ${esc(u.label)}</button>`:''}</div>`}
+function bindPaper(){const a=$('#hPaperDone');if(a)a.onclick=()=>{const q=quickCount();if(q)paperRead(today(),q)};
+  $('#hPaperRep').onclick=openPaper;const u=$('#hUndo');if(u)u.onclick=undoPaper}
+function paperRead(d,n){
+  const k=dkey(d),snap={pos:PL.pos,rl:PL.rounds.length,k,log:PL.log[k]?JSON.parse(JSON.stringify(PL.log[k])):null,plan:PL.plans[k]?JSON.parse(JSON.stringify(PL.plans[k])):null};
+  const from=cname(PL.pos);let done=null,dd=false;
+  for(let j=0;j<n;j++){const r=readChapter(d,true);if(r.done)done=r.done;if(r.dayDone)dd=true}
+  const to=cname((PL.pos+NCH-1)%NCH),dl=d.getDate()+'/'+(d.getMonth()+1);
+  snap.label=n+' đoạn ('+from+(n>1?' → '+to:'')+') ngày '+dl;PL.undo=snap;replanToday(k);psave();lastCi=null;
+  if(done)celebrate(done);else{toast('Đã ghi nhận '+n+' đoạn đọc sách giấy, ngày '+dl+(dd?'. Đã xong phần ngày này.':''));renderHome()}
+}
+function undoPaper(){const u=PL.undo;if(!u)return;
+  const added=PL.rounds.slice(u.rl);PL.rdel=Array.from(new Set([...(PL.rdel||[]),...added.map(x=>x.y+'-'+x.n+'-'+x.d)]));
+  PL.rounds=PL.rounds.slice(0,u.rl);PL.pos=u.pos;
+  PL.log[u.k]=u.log?Object.assign(u.log,{t:Date.now()}):{c:0,ch:[],t:Date.now()};
+  if(u.plan)PL.plans[u.k]=u.plan;
+  PL.undo=null;replanToday(u.k);touch();psave();lastCi=null;toast('Đã hoàn tác: '+u.label);renderHome()}
+/* báo bù ngày trước làm vị trí đọc đổi: nếu hôm nay chưa đọc gì thì tính lại phần đọc của hôm nay */
+function replanToday(k){const tk=dkey(today());if(k!==tk&&!(PL.log[tk]&&PL.log[tk].ch.length))delete PL.plans[tk]}
+function openPaper(){
+  const t=today(),[b0,c0]=chList[PL.pos];
+  const dayOpt=Array.from({length:8},(_,i)=>{const d=addD(t,-i);return `<option value="${i}">${i===0?'Hôm nay':i===1?'Hôm qua':(d.getDay()?'Thứ '+(d.getDay()+1):'Chủ nhật')}, ${d.getDate()}/${d.getMonth()+1}</option>`}).join('');
+  const bookOpt=B.slice(b0).map((bk,j)=>`<option value="${b0+j}">${esc(bk[0])}</option>`).join('');
+  showModal(`<div class="big" style="font-size:22px">Báo cáo đọc sách giấy</div>
+    <div class="pfld"><label for="ppDay">Ngày đọc</label><select id="ppDay">${dayOpt}</select></div>
+    <div class="pfld"><label>Đang dở ở: <b>${esc(cname(PL.pos))}</b>. Đã đọc đến hết đoạn:</label>
+      <div style="display:flex;gap:8px"><select id="ppB" style="flex:1">${bookOpt}</select><select id="ppC" style="width:90px"></select></div></div>
+    <p class="lbl" id="ppSum" style="margin:12px 0 0"></p>
+    <button class="hbtn or" data-a="ok">Ghi nhận</button><button class="hbtn" data-a="x" style="background:transparent;color:inherit;border:1px solid #ccc">Hủy</button>`,
+    {ok:()=>{const n=cnt(),dd=+$('#ppDay').value;if(n<1)return;hideModal();paperRead(addD(t,-dd),n)},x:hideModal});
+  const B1=$('#ppB'),C1=$('#ppC'),D1=$('#ppDay');
+  const cnt=()=>chIdx(+B1.value,+C1.value)-PL.pos+1;
+  const sum=()=>{const n=cnt();$('#ppSum').textContent=n>0?'Sẽ ghi nhận '+n+' đoạn: '+cname(PL.pos)+(n>1?' → '+cname(PL.pos+n-1):'')+', vào ngày '+D1.options[D1.selectedIndex].text.toLowerCase()+'.':''};
+  const fillC=sel=>{const b=+B1.value,st=b===b0?c0:0;C1.innerHTML=B[b][2].map((_,c)=>c<st?'':`<option value="${c}">${c+1}</option>`).join('');if(sel!=null)C1.value=sel;sum()};
+  /* mặc định: cuối phần đọc của hôm nay (nếu còn trong cùng lần đọc), không thì đoạn đang dở */
+  const p=plan(t),e=p.from+p.n-1;let def=e>=PL.pos&&e<NCH?e:PL.pos;const [db,dc]=chList[def];B1.value=db;fillC(dc);
+  B1.onchange=()=>fillC(null);C1.onchange=sum;D1.onchange=sum;
+}
+
 /* Ảnh báo cáo dạng bảng (mẫu Excel "Đọc lần thứ N" của David, chốt 25/11/2026): không có thông tin tài khoản,
    dòng "Đọc lần thứ N" chữ to. 66 sách 2 cột (24 sách bên trái), mỗi hàng 22 đoạn, kẻ ô đen.
    Tô màu: cam = đoạn đọc hôm nay, xanh lá = đoạn đã đọc những ngày trước (trong lần đọc hiện tại). */
@@ -1416,9 +1463,11 @@ function placeAcct(){const a=$('#rowAcct'),sc=$('#hScroll'),bd=$('#hBody');if(!a
 /* Gộp kế hoạch từ tài khoản (máy khác) vào máy này. force: vừa đăng nhập, lấy cài đặt của tài khoản */
 function mergePlan(r,force){
   if(!r||typeof r!=='object')return false;let ch=false;
-  for(const [k,v] of Object.entries(r.log||{})){const l=PL.log[k];if(!l||(v.c||0)>(l.c||0)){PL.log[k]=v;ch=true}}
+  for(const [k,v] of Object.entries(r.log||{})){const l=PL.log[k];if(!l||((v.t||l.t)?(v.t||0)>(l.t||0):(v.c||0)>(l.c||0))){PL.log[k]=v;ch=true}}
   for(const [k,v] of Object.entries(r.plans||{}))if(!PL.plans[k]||(force&&JSON.stringify(PL.plans[k])!==JSON.stringify(v))){PL.plans[k]=v;ch=true}
-  for(const x of r.rounds||[])if(!PL.rounds.some(y=>y.y===x.y&&y.n===x.n)){PL.rounds.push(x);ch=true}
+  PL.rdel=Array.from(new Set([...(PL.rdel||[]),...(r.rdel||[])]));
+  for(const x of r.rounds||[])if(!PL.rounds.some(y=>y.y===x.y&&y.n===x.n)&&!PL.rdel.includes(x.y+'-'+x.n+'-'+x.d)){PL.rounds.push(x);ch=true}
+  PL.rounds=PL.rounds.filter(x=>!PL.rdel.includes(x.y+'-'+x.n+'-'+x.d));
   PL.rounds.sort((a,b)=>a.d<b.d?-1:1);
   if(r.prof&&r.prof.t&&(!PL.prof||r.prof.t>(PL.prof.t||0)||force)&&JSON.stringify(r.prof)!==JSON.stringify(PL.prof)){PL.prof=r.prof;ch=true}
   for(const [yk,v] of Object.entries(r.yb||{})){PL.yb=PL.yb||{};const l=PL.yb[yk];if(!l||(v.t||0)>(l.t||0)){PL.yb[yk]=v;ch=true}}
