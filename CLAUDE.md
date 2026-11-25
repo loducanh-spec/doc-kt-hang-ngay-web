@@ -37,4 +37,5 @@ Có **tài khoản thành viên** (email/mật khẩu): mỗi người một k�
 
 ## Cách làm việc với David
 - Tiếng Việt có dấu, ngắn gọn; nêu rõ sự thật và giả định.
+- **Khi cần David chốt phương án:** câu hỏi nào không bắt buộc phải gõ chữ thì đưa về dạng **tích chọn hoặc danh sách thả xuống** (form chọn trong chat, mỗi câu có sẵn các lựa chọn, đánh dấu lựa chọn đề xuất, kèm ô "Ý kiến khác"), để David thao tác nhanh trên điện thoại. Chỉ để ô nhập chữ khi thật sự cần nội dung tự do.
 - Commit kết thúc bằng hai dòng `Co-Authored-By` và `Claude-Session` theo quy định của phiên.
