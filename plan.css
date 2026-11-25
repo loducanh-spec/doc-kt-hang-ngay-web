@@ -75,3 +75,4 @@ html.iosapp #pHome .hTop{padding-top:calc(26px + env(safe-area-inset-top,0px))}
 #pHome .step small{font-size:12px}
 #hModal .pfld{text-align:left;margin-top:14px}#hModal .pfld label{display:block;font-size:13px;color:#5d6873;margin-bottom:4px}
 #hModal select{font:16px var(--sans);padding:10px;border-radius:10px;border:1px solid #cfd6dc;background:#fff;color:#18212b;width:100%;min-height:46px}
+#pHome .palPrev{display:flex;gap:8px;margin-top:10px}#pHome .palPrev span{flex:1;text-align:center;padding:8px;border-radius:8px;color:#111;font-size:14px;border:1px solid #0003}

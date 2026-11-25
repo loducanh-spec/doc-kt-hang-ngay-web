@@ -40,7 +40,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 #flap{position:absolute;top:0;bottom:0;left:0;width:100%;display:none;pointer-events:none;transform-origin:0 0;will-change:transform;
   background:linear-gradient(to right,color-mix(in srgb,var(--page) 88%,#000) 0%,color-mix(in srgb,var(--page) 92%,#fff) 55%,color-mix(in srgb,var(--page) 80%,#fff) 90%,color-mix(in srgb,var(--page) 70%,#000) 100%)}
 .clip{position:absolute;left:22px;top:12px;overflow:hidden}
-.flow,.measure{font-family:var(--serif);font-size:var(--fs);line-height:var(--lhpx,var(--lh));text-align:justify;hyphens:none;overflow-wrap:break-word}
+.flow,.measure{font-family:var(--serif),'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',serif;font-size:var(--fs);line-height:var(--lhpx,var(--lh));text-align:justify;hyphens:none;overflow-wrap:break-word}
 .measure{position:absolute;left:-9999px;top:0;visibility:hidden;overflow:hidden;column-gap:44px;column-fill:auto}.measure i{font-style:normal}
 .clip{contain:strict}
 .txt.cont{text-align-last:justify}.per.cont{text-align-last:auto}.per.cont .v:last-child{text-align-last:justify}
@@ -184,6 +184,8 @@ textarea{width:100%;min-height:64px;border-radius:8px;border:1px solid var(--lin
 .aS{font-family:var(--serif);font-size:15px;font-weight:700}.aL{font-family:var(--serif);font-size:25px;font-weight:700}
 html.full #app{padding-top:0;padding-bottom:0}
 @media (prefers-reduced-motion:reduce){.sheet,#bar{transition:none}}
+select.lsel{width:100%;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--ui2);color:var(--uiInk);font:16px var(--sans);padding:0 10px}
+em.s2{font-style:normal;color:var(--mute);font-size:.9em}
 </style>
 </head>
 <body>
@@ -268,6 +270,8 @@ html.full #app{padding-top:0;padding-bottom:0}
   <!-- Cài đặt -->
   <div class="sheet" id="shSet">
     <div class="setHead"><b>Hiển thị</b><button class="btn pri sm" data-shclose>Xong</button></div>
+    <div class="row"><label>Ngôn ngữ đọc</label><select id="langSel" class="lsel"><option value="vi">Tiếng Việt (Truyền Thống 1925)</option><option value="ko">한국어 (개역한글 1961)</option><option value="en">English (King James 1611/1769)</option><option value="fr">Français (Louis Segond 1910)</option></select></div>
+    <div class="row"><label>Song ngữ: hiện thêm bản dịch dưới mỗi câu</label><select id="lang2Sel" class="lsel"><option value="">Tắt</option><option value="vi">Tiếng Việt</option><option value="ko">한국어</option><option value="en">English</option><option value="fr">Français</option></select></div>
     <div class="row"><label>Nền</label><div class="seg" id="segTheme"><button class="btn" data-v="light">Sáng</button><button class="btn" data-v="sepia">Sepia</button><button class="btn" data-v="brown">Nâu tối</button><button class="btn" data-v="black">Đen</button></div></div>
     <div class="row"><label>Kiểu chữ</label><div class="fontSeg" id="segFont"><button class="btn" data-v="literata" style="font-family:'Literata',serif">Literata</button><button class="btn" data-v="noto" style="font-family:'Noto Serif',serif">Noto Serif</button><button class="btn" data-v="lora" style="font-family:'Lora',serif">Lora</button><button class="btn" data-v="bvp" style="font-family:'Be Vietnam Pro',sans-serif">Be Vietnam</button></div></div>
     <div class="row"><label>Cỡ chữ</label><div class="seg"><button class="btn" id="fsDn">A−</button><span class="val" id="fsShow"></span><button class="btn" id="fsUp">A+</button></div></div>
@@ -306,7 +310,11 @@ html.full #app{padding-top:0;padding-bottom:0}
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const store={get(k,d){try{const v=localStorage.getItem('dkt.'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('dkt.'+k,JSON.stringify(v))}catch(e){}}};
 let B=[], chList=[];                     // B[b]=[name,id,chapters]; chList = flat [b,c]
-const set=Object.assign({t:'brown',ff:'literata',fs:21,lh:1.6,per:0,rate:1,full:0,voice:''},store.get('set',{}));
+const set=Object.assign({t:'brown',ff:'literata',fs:21,lh:1.6,per:0,rate:1,full:0,voice:'',lang:'vi',lang2:''},store.get('set',{}));
+/* Ngôn ngữ: VB = bản 1925 (luôn tải, dùng cho kế hoạch và ảnh báo cáo); B = bản đang đọc; B2 = bản song ngữ */
+const LANGS={vi:{f:'vie1925.json',tts:'vi-VN',n:'Tiếng Việt'},ko:{f:'krv1961.json',tts:'ko-KR',n:'한국어'},en:{f:'kjv.json',tts:'en-US',n:'English'},fr:{f:'lsg1910.json',tts:'fr-FR',n:'Français'}};
+const LDATA={};let VB=null,B2=null;
+function loadLang(code){if(LDATA[code])return Promise.resolve(LDATA[code]);return fetch(LANGS[code].f).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(d=>LDATA[code]=d)}
 const CAP=window.capacitorExports, NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
 const P=n=>NATIVE&&CAP?CAP.registerPlugin(n):null;
 const TTS=P('TextToSpeech'), RA=P('ReadAloud'), AppP=P('App'), FS=P('Filesystem'), ShareP=P('Share');
@@ -352,17 +360,23 @@ function geom(){const st=$('#stage');const W=st.clientWidth,H=st.clientHeight,ch
 const vtext=(b,c,v)=>B[b][2][c][v-1]||'';
 function vlabel(b,c,v){const vs=B[b][2][c];let e=v;while(vs[e]==='')e++;return e>v?v+'-'+e:''+v}
 function measure(b,c,g){
-  const vs=B[b][2][c];
+  const vs=B[b][2][c],v2s=B2&&B2[b]&&B2[b][2][c]||null;
   const m=document.createElement('div');m.className='measure';
   Object.assign(m.style,{width:g.cw+'px',height:g.ch+'px',columnWidth:g.cw+'px'});
-  const words=vs.map(t=>(t||'').split(' ').filter(Boolean));
-  m.innerHTML=head(b,c)+`<p class="txt${set.per?' per':''}">`+words.map((ws,i)=>ws.length?
-    `<span class="v"><sup>${vlabel(b,c,i+1)}</sup>`+ws.map(w=>`<i>${esc(w)}</i>`).join(' ')+' </span>':'').join('')+'</p>';
+  const nv=Math.max(vs.length,v2s?v2s.length:0);
+  /* mỗi từ là [chữ, 0: bản chính | 1: bản song ngữ | 2: xuống dòng] */
+  const words=Array.from({length:nv},(_,i)=>{const a=(vs[i]||'').split(' ').filter(Boolean).map(w=>[w,0]);
+    const t2=v2s&&v2s[i];if(t2){const bb=t2.split(' ').filter(Boolean).map(w=>[w,1]);return a.concat(a.length?[['',2]]:[],bb)}return a});
+  const tok=t=>t[1]===2?'<br>':`<i>${t[1]?'<em class="s2">'+esc(t[0])+'</em>':esc(t[0])}</i>`;
+  m.innerHTML=head(b,c)+`<p class="txt${set.per||B2?' per':''}">`+words.map((ws,i)=>ws.length?
+    `<span class="v"><sup>${vlabel(b,c,i+1)}</sup>`+ws.map(tok).join(' ')+' </span>':'').join('')+'</p>';
   document.body.appendChild(m);
   const left=m.getBoundingClientRect().left, step=g.cw+g.G;
   const col=el=>{const r=el.getClientRects()[0];return r?Math.max(0,Math.floor((r.left-left+2)/step)):0};
   const hp=col(m.firstChild), spans=m.querySelectorAll('.v'), wp=[];
-  let si=0;words.forEach(ws=>{if(!ws.length){wp.push([]);return}const is=spans[si++].getElementsByTagName('i');wp.push([...is].map(col))});
+  let si=0;words.forEach(ws=>{if(!ws.length){wp.push([]);return}const is=[...spans[si++].getElementsByTagName('i')].map(col);let q=0;
+    /* dấu xuống dòng nằm cùng trang với từ kế tiếp */
+    const pos=ws.map(t=>t[1]===2?null:is[q++]);for(let j=pos.length-1;j>=0;j--)if(pos[j]===null)pos[j]=j+1<pos.length?pos[j+1]:(j?pos[j-1]:0);wp.push(pos)});
   m.remove();
   const n=Math.max(1,hp+1,...wp.map(a=>a.length?a[a.length-1]+1:1));
   const parts=Array.from({length:n},()=>[]), vp=[0];
@@ -370,11 +384,12 @@ function measure(b,c,g){
     vp.push(wp[i].length?wp[i][0]:vp[vp.length-1]);
     let p0=-1,buf=[];
     const flush=(p,last)=>{if(p<0)return;const first=p===(wp[i][0]||0);
-      parts[p].push({html:`<span class="${cls}" data-k="${k}" data-v="${v}"${last?' data-e="1"':''}>${first?`<sup>${vlabel(b,c,v)}</sup>`:''}${esc(buf.join(' '))}${last&&h&&h.n?'<span class="nt">✎</span>':''} </span>`,cont:!last})};
+      const txt=buf.map(t=>t[1]===2?'<br>':t[1]?'<em class="s2">'+esc(t[0])+'</em>':esc(t[0])).join(' ').replace(/ <br> /g,'<br>');
+      parts[p].push({html:`<span class="${cls}" data-k="${k}" data-v="${v}"${last?' data-e="1"':''}>${first?`<sup>${vlabel(b,c,v)}</sup>`:''}${txt}${last&&h&&h.n?'<span class="nt">✎</span>':''} </span>`,cont:!last})};
     ws.forEach((w,j)=>{const p=wp[i][j];if(p!==p0){flush(p0,false);buf=[];p0=p}buf.push(w)});
     flush(p0,true);});
   const html=parts.map((ps,p)=>{const cont=ps.length&&ps[ps.length-1].cont;
-    return (p===hp?head(b,c):'')+`<p class="txt${set.per?' per':''}${cont?' cont':''}">${ps.map(x=>x.html).join('')}</p>`});
+    return (p===hp?head(b,c):'')+`<p class="txt${set.per||B2?' per':''}${cont?' cont':''}">${ps.map(x=>x.html).join('')}</p>`});
   return{n,vp,html};
 }
 /* ---------- Bộ lật trang tự viết ----------
@@ -535,6 +550,15 @@ $$('[data-close]').forEach(b=>b.onclick=()=>closeAll());
 $$('[data-shclose]').forEach(b=>b.onclick=()=>{if(sel.size)clearSel();else closeSheets()});
 $('#bClose').onclick=()=>$('#bar').classList.remove('on');
 $('#bSet').onclick=()=>{$('#bar').classList.remove('on');openSheet('#shSet')};
+function syncLangSel(){$('#langSel').value=set.lang;$('#lang2Sel').value=set.lang2||''}
+async function applyLang(){
+  try{if(set.lang!=='vi'&&!LDATA[set.lang])toast('Đang tải bản '+LANGS[set.lang].n+'…');B=await loadLang(set.lang);
+    B2=set.lang2&&set.lang2!==set.lang?await loadLang(set.lang2):null}
+  catch(e){toast('Không tải được bản dịch, hãy kiểm tra mạng');set.lang='vi';set.lang2='';B=VB;B2=null}
+  VOICES=null;set.voice='';syncLangSel();relayout();if(typeof homeOn==='function'&&homeOn())renderHome()}
+$('#langSel').onchange=e=>{set.lang=e.target.value;applyLang()};
+$('#lang2Sel').onchange=e=>{set.lang2=e.target.value;applyLang()};
+$('#bSet').addEventListener('click',syncLangSel);
 $('#segTheme').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;set.t=b.dataset.v;applySettings()};
 const FF={literata:'Literata',noto:'Noto Serif',lora:'Lora',bvp:'Be Vietnam Pro'};
 $('#segFont').onclick=e=>{const b=e.target.closest('[data-v]');if(!b||b.dataset.v===set.ff)return;set.ff=b.dataset.v;applySettings();
@@ -671,10 +695,11 @@ $('#bSearch').onclick=()=>{closeAll();renderScope();$('#sIn').value='';renderRec
 /* ---------- Đọc thành tiếng ----------
    Trong APK: dùng giọng đọc của Android (plugin TextToSpeech). Trên trình duyệt: Web Speech. */
 let tts=null;
-function pickVoice(){return 'speechSynthesis' in window?(speechSynthesis.getVoices()||[]).find(v=>/^vi/i.test((v.lang||'').replace('_','-'))):null}
+const langRe=()=>new RegExp('^'+set.lang,'i');
+function pickVoice(){return 'speechSynthesis' in window?(speechSynthesis.getVoices()||[]).find(v=>langRe().test((v.lang||'').replace('_','-'))):null}
 let VOICES=null; // [{i, name, local}] giọng tiếng Việt có trên máy
 function webVoices(){const all=speechSynthesis.getVoices()||[];
-  return all.map((v,i)=>({i,name:v.name,lang:v.lang,local:v.localService,ref:v})).filter(v=>/^vi/i.test((v.lang||'').replace('_','-')))}
+  return all.map((v,i)=>({i,name:v.name,lang:v.lang,local:v.localService,ref:v})).filter(v=>langRe().test((v.lang||'').replace('_','-')))}
 if(!TTS&&'speechSynthesis' in window){ // Safari/Chrome nạp danh sách giọng chậm: nạp sẵn từ lúc mở app
   const warm=()=>{const v=webVoices();if(v.length){VOICES=v.sort((a,b)=>(a.local-b.local)||a.name.localeCompare(b.name))}};
   warm();try{speechSynthesis.addEventListener('voiceschanged',warm)}catch(e){speechSynthesis.onvoiceschanged=warm}}
@@ -682,7 +707,7 @@ async function loadVoices(){
   if(VOICES)return VOICES;
   try{
     if(TTS){const all=(await TTS.getSupportedVoices()).voices||[];
-      VOICES=all.map((v,i)=>({i,uri:v.voiceURI||'',name:v.voiceURI||v.name||('voice'+i),lang:v.lang||'',local:v.localService!==false})).filter(v=>/^vi/i.test(v.lang))}
+      VOICES=all.map((v,i)=>({i,uri:v.voiceURI||'',name:v.voiceURI||v.name||('voice'+i),lang:v.lang||'',local:v.localService!==false})).filter(v=>langRe().test(v.lang))}
     else if('speechSynthesis' in window)VOICES=webVoices();
   }catch(e){VOICES=[]}
   if(!VOICES||!VOICES.length){const v=VOICES;VOICES=null;return v||[]}
@@ -696,26 +721,26 @@ async function renderVoices(){
   sel.value=vs.some(v=>v.name===set.voice)?set.voice:'';
   const IOS=/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent)&&!NATIVE;
   $('#voiceHint').textContent=IOS?`iPhone chỉ cho trang web dùng giọng đọc cài sẵn (thường là Linh); giọng Siri bị Apple khóa, không dùng được ngoài Siri.`
-   :vs.length?`Máy có ${vs.length} giọng tiếng Việt. Android không cho biết giọng nam hay nữ, anh bấm Nghe thử từng giọng để chọn. Giọng "qua mạng" cần Internet.`
+   :vs.length?`Máy có ${vs.length} giọng ${LANGS[set.lang].n}. Android không cho biết giọng nam hay nữ, anh bấm Nghe thử từng giọng để chọn. Giọng "qua mạng" cần Internet.`
     :'Chưa thấy giọng tiếng Việt. Vào Cài đặt điện thoại > Chuyển văn bản thành giọng nói > Google > Cài đặt dữ liệu giọng nói > Tiếng Việt để tải thêm giọng.';
 }
 function curVoice(){return VOICES?VOICES.find(v=>v.name===set.voice):null}
 // Chuẩn hóa câu trước khi đọc (giống ReadAloudService.spoken): Jêsus → Giê-xu; bỏ gạch nối giữa âm tiết;
 // chữ hoa đứng một mình (Y, A, Ê…) viết thường để máy không đánh vần thành tên chữ cái; không đọc dấu ngoặc.
-const spoken=t=>t.replace(/Jêsus/g,'Giê-xu').replace(/(\p{L})-(?=\p{L})/gu,'$1 ').replace(/-/g,' ')
+const spoken=t=>set.lang!=='vi'?t.replace(/[\[\]]/g,''):t.replace(/Jêsus/g,'Giê-xu').replace(/(\p{L})-(?=\p{L})/gu,'$1 ').replace(/-/g,' ')
   .replace(/[()]/g,', ').replace(/[\[\]"“”]/g,' ').replace(/(^|[^\p{L}])(\p{Lu})(?!\p{L})/gu,(m,a,c)=>a+c.toLowerCase())
   .replace(/\s+/g,' ').replace(/ ,/g,',').replace(/,(\s*,)+/g,',').trim();
 function speakText(text){ // trả về Promise kết thúc khi đọc xong câu
   text=spoken(text);
   const v=curVoice();
-  if(TTS){const o={text,lang:'vi-VN',rate:set.rate,pitch:1,volume:1,category:'playback'};if(v)o.voice=v.i;return TTS.speak(o)}
+  if(TTS){const o={text,lang:LANGS[set.lang].tts,rate:set.rate,pitch:1,volume:1,category:'playback'};if(v)o.voice=v.i;return TTS.speak(o)}
   return new Promise((res,rej)=>{const u=new SpeechSynthesisUtterance(text);const vo=v&&v.ref||pickVoice();
-    u.lang='vi-VN';if(vo)u.voice=vo;u.rate=set.rate;u.onend=res;u.onerror=e=>(e&&(e.error==='interrupted'||e.error==='canceled')?res:rej)(e);
+    u.lang=LANGS[set.lang].tts;if(vo)u.voice=vo;u.rate=set.rate;u.onend=res;u.onerror=e=>(e&&(e.error==='interrupted'||e.error==='canceled')?res:rej)(e);
     window.__ktUtt=u;speechSynthesis.speak(u)});
 }
 $('#voiceSel').onchange=e=>{set.voice=e.target.value;applySettings()};
-$('#voiceTry').onclick=()=>{if(TTS){loadVoices().then(()=>{ttsHalt();speakText('Ban đầu Đức Chúa Trời dựng nên trời đất.').catch(()=>{})});return}
-  if(speechSynthesis.speaking||speechSynthesis.pending)speechSynthesis.cancel();speakText('Ban đầu Đức Chúa Trời dựng nên trời đất.').catch(()=>{})};
+$('#voiceTry').onclick=()=>{if(TTS){loadVoices().then(()=>{ttsHalt();speakText(vtext(0,0,1)||'Ban đầu Đức Chúa Trời dựng nên trời đất.').catch(()=>{})});return}
+  if(speechSynthesis.speaking||speechSynthesis.pending)speechSynthesis.cancel();speakText(vtext(0,0,1)||'Ban đầu Đức Chúa Trời dựng nên trời đất.').catch(()=>{})};
 $('#bSet').addEventListener('click',()=>renderVoices());
 
 function ttsStart(b,c,v){
@@ -991,7 +1016,7 @@ async function renderAbout(){
       <dt>Tính năng</dt><dd><small>Lật trang cong giấy · tô 4 màu và ghi chú · tìm kiếm có dấu/không dấu · đọc thành tiếng (chạy nền trên Android) · 3 nền màu · lịch sử đọc · sao lưu, đồng bộ.</small></dd>
     </dl></div>`;
 }
-const WEB_UPDATED='25/11/2026 (bản 2)';
+const WEB_UPDATED='25/11/2026 (bản 3)';
 
 /* ---------- Nút Back của Android ---------- */
 if(AppP)AppP.addListener('backButton',()=>{
@@ -1074,7 +1099,7 @@ const ddiff=(a,b)=>Math.round((b-a)/864e5);
 const DOW=['CN','T2','T3','T4','T5','T6','T7'];
 const cname=i=>{const [b,c]=chList[i];return ref(b,c)};
 function initPlan(){
-  LEN=chList.map(([b,c])=>B[b][2][c].reduce((s,v)=>s+(v?v.length:0),0));
+  LEN=chList.map(([b,c])=>VB[b][2][c].reduce((s,v)=>s+(v?v.length:0),0));
   CUM=[0];LEN.forEach((l,i)=>CUM.push(CUM[i]+l));NCH=LEN.length;TOTAL=CUM[NCH];
   if(!PL.start){PL.start=dkey(today());PL.pos=chIdx(pos.b,pos.c)===0?0:PL.pos;psave()}
 }
@@ -1197,12 +1222,15 @@ function renderHome(){
       <div class="legend"><span><i style="background:var(--or)"></i>Hôm nay, đã đọc xong</span><span><i style="border-color:var(--or)"></i>Hôm nay, đọc dở</span><span><i style="background:var(--gr)"></i>Đã đọc xong</span><span><i style="border-color:var(--gr)"></i>Đọc dở</span><span><i style="background:var(--hg)"></i>Chưa đọc</span></div></div>
       <div class="stats"><div class="stat"><b>${cnt}</b><span>ngày trong tháng</span></div><div class="stat"><b>${yd}</b><span>ngày năm ${y}</span></div><div class="stat"><b>${streak()}</b><span>ngày liên tiếp</span></div></div>
       <div class="card"><div class="lbl" style="margin-bottom:8px">Đã đọc trọn Kinh Thánh năm ${y}</div>${ybOf(y)&&ybOf(y).r?`<div class="chips" style="margin-bottom:8px"><span class="chip">Lần 1–${ybOf(y).r}: khai báo trước khi dùng app</span></div>`:''}${rs.length?'<div class="chips">'+rs.map(r=>`<span class="chip">Lần ${r.n} năm ${r.y} · ${dparse(r.d).getDate()}/${dparse(r.d).getMonth()+1}</span>`).join('')+'</div>':'<div class="lbl">Chưa có lần nào đọc trọn trong app. Đang đọc lần '+curRound(y)+', được '+fmtPct(roundPct())+'.</div>'}</div>
+      <div class="card"><div class="fld" style="margin-top:-12px"><label for="hPal">Màu ảnh báo cáo (đọc hôm nay / đã đọc ngày trước)</label><select id="hPal">${PALS.map((x,i)=>`<option value="${i}" ${i===palIdx()?'selected':''}>${x[0]}</option>`).join('')}</select></div>
+      <div class="palPrev"><span style="background:${pal()[1]}">Hôm nay</span><span style="background:${pal()[2]}">Ngày trước</span></div></div>
       <button class="hbtn or" id="hShareT">Lưu ảnh báo cáo · Chia sẻ</button>
       <button class="hbtn alt" id="hShareG" style="margin-top:10px">Ảnh báo cáo dạng vòng tròn</button>
       <button class="hbtn alt" id="hShare" style="margin-top:10px">Ảnh báo cáo dạng lịch tháng</button>`;
     $('#hPm').onclick=()=>{hmonth=new Date(y,m-1,1);renderHome()};$('#hNm').onclick=()=>{hmonth=new Date(y,m+1,1);renderHome()};
     $('#hShare').onclick=()=>{if(!profName())return needProfile('Hãy khai họ tên trước, để ảnh báo cáo ghi rõ của ai');shareImg(y,m,cnt,yd,rs)};
     $('#hShareT').onclick=()=>shareTable();
+    $('#hPal').onchange=e=>{PL.rc=+e.target.value;touch();psave();renderHome()};
     $('#hShareG').onclick=()=>{if(!profName())return needProfile('Hãy khai họ tên trước, để ảnh báo cáo ghi rõ của ai');shareGrid()};
   }
   if(htab==='plan'){
@@ -1368,18 +1396,23 @@ function openPaper(){
   B1.onchange=()=>fillC(null);C1.onchange=sum;D1.onchange=sum;
 }
 
+/* Bộ màu cho ảnh báo cáo (David chốt 25/11/2026: bộ có sẵn, đổi 2 màu, chỉ áp dụng cho ảnh báo cáo). [tên, hôm nay, ngày trước] */
+const PALS=[['Cam – Xanh lá (mặc định)','#f7941d','#22e022'],['Đỏ hồng – Xanh dương nhạt','#ff6b6b','#74b9ff'],['Vàng – Xanh ngọc','#ffd43b','#38d9a9'],
+  ['Tím nhạt – Vàng chanh','#c77dff','#d8f35a'],['Hồng – Xanh da trời','#ff8cc6','#66d9ef'],['Xanh dương – Xanh lá nhạt','#4dabf7','#8ce99a'],
+  ['Đỏ – Xám nhạt (in tiết kiệm mực)','#ff5c5c','#cfd4da'],['Cam đất – Be','#e8915b','#e3d5b8']];
+const palIdx=()=>Math.min(PALS.length-1,Math.max(0,PL.rc|0)),pal=()=>PALS[palIdx()];
 /* Ảnh báo cáo dạng bảng (mẫu Excel "Đọc lần thứ N" của David, chốt 25/11/2026): không có thông tin tài khoản,
    dòng "Đọc lần thứ N" chữ to. 66 sách 2 cột (24 sách bên trái), mỗi hàng 22 đoạn, kẻ ô đen.
    Tô màu: cam = đoạn đọc hôm nay, xanh lá = đoạn đã đọc những ngày trước (trong lần đọc hiện tại). */
 async function shareTable(){
   try{await Promise.all(['400','600','700'].map(w=>document.fonts.load(w+" 20px 'Be Vietnam Pro'")))}catch(e){}
   const F="'Be Vietnam Pro',Calibri,Arial,sans-serif",t=today(),y=t.getFullYear();
-  const META=B.map(bk=>[bk[0],bk[2].length]),L=PL.log[dkey(t)],td=new Set(L?L.ch:[]);
+  const META=VB.map(bk=>[bk[0],bk[2].length]),L=PL.log[dkey(t)],td=new Set(L?L.ch:[]);
   const st=i=>i<PL.pos?(td.has(i)?'o':'g'):'';
   const PER=22,CW=31,CH=27,NW=128,GAP=26,M=20,TT=76,SPLIT=24;
   const side=(b0,b1)=>{let r=0;for(let b=b0;b<b1;b++)r+=Math.ceil(META[b][1]/PER);return r};
   const rows=Math.max(side(0,SPLIT),side(SPLIT,META.length)),SW=NW+PER*CW;
-  const W=M*2+SW*2+GAP,H=M+TT+rows*CH+M,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
+  const LG=50,W=M*2+SW*2+GAP,H=M+TT+rows*CH+M+LG,cv=document.createElement('canvas');const [,CO,CG]=pal();cv.width=W;cv.height=H;const x=cv.getContext('2d');
   x.fillStyle='#fff';x.fillRect(0,0,W,H);x.textBaseline='middle';
   /* "Đọc lần thứ N": chữ to, số lần màu cam */
   x.textAlign='left';x.fillStyle='#000';x.font='700 44px '+F;const lb='Đọc lần thứ ',wl=x.measureText(lb).width;x.fillText(lb,M,M+TT/2-4);
@@ -1395,11 +1428,15 @@ async function shareTable(){
     for(let b=b0;b<b1;b++){const n=META[b][1],nr=Math.ceil(n/PER);
       x.lineWidth=1;x.strokeStyle='#000';x.strokeRect(ox+.5,ry+.5,NW,nr*CH);nameCell(META[b][0],ox,ry,nr*CH);
       for(let i=0;i<n;i++){const cx=ox+NW+(i%PER)*CW,cy=ry+Math.floor(i/PER)*CH,s2=st(gi+i);
-        if(s2){x.fillStyle=s2==='o'?'#f7941d':'#22e022';x.fillRect(cx,cy,CW,CH)}
+        if(s2){x.fillStyle=s2==='o'?CO:CG;x.fillRect(cx,cy,CW,CH)}
         x.strokeStyle='#000';x.strokeRect(cx+.5,cy+.5,CW,CH);
         x.fillStyle='#000';x.textAlign='center';x.font=(i+1>99?'400 12px ':'400 14px ')+F;x.fillText(i+1,cx+CW/2,cy+CH/2+1)}
       gi+=n;ry+=nr*CH}};
   drawSide(0,SPLIT,M);drawSide(SPLIT,META.length,M+SW+GAP);
+  /* chú thích màu */
+  let lx=M;const ly=H-M-14;x.textAlign='left';x.font='400 18px '+F;
+  [[CO,'Đọc hôm nay'],[CG,'Đã đọc những ngày trước'],['#fff','Chưa đọc']].forEach(([c,lb])=>{x.fillStyle=c;x.fillRect(lx,ly-11,30,22);x.strokeStyle='#000';x.lineWidth=1;x.strokeRect(lx+.5,ly-10.5,30,22);
+    x.fillStyle='#000';x.fillText(lb,lx+40,ly+1);lx+=40+x.measureText(lb).width+40});
   deliverImg(cv,'DocLanThu'+curRound(y)+'_'+dkey(t)+'.png');
 }
 
@@ -1408,8 +1445,8 @@ async function shareTable(){
    (xanh lá: đã đọc, cam: đoạn đang đọc, chỉ viền: chưa đọc đến). Đầu ảnh: tên tài khoản và thanh tiến độ lần đọc. */
 async function shareGrid(){
   try{await Promise.all(['400','500','600','700'].map(w=>document.fonts.load(w+" 20px 'Be Vietnam Pro'")))}catch(e){}
-  const F="'Be Vietnam Pro',Arial,sans-serif",OR='#f39a2b',GR='#3cc35a',NAVY='#173042',INK='#111';
-  const META=B.map(bk=>[bk[0],bk[2].length]),t=today(),y=t.getFullYear(),pf=PL.prof||{},di=dayInfo(dkey(t));
+  const F="'Be Vietnam Pro',Arial,sans-serif",OR=pal()[1],GR=pal()[2],NAVY='#173042',INK='#111';
+  const META=VB.map(bk=>[bk[0],bk[2].length]),t=today(),y=t.getFullYear(),pf=PL.prof||{},di=dayInfo(dkey(t));
   const PER=24,D=24,P=28,NW=158,M=24,BG=7,HEAD=196,SPLIT=24;
   const rowsOf=n=>Math.ceil(n/PER),bookH=n=>rowsOf(n)*P-(P-D);
   const sideH=(b0,b1)=>{let h=0;for(let b=b0;b<b1;b++)h+=bookH(META[b][1])+BG;return h};
@@ -1471,17 +1508,18 @@ function mergePlan(r,force){
   PL.rounds.sort((a,b)=>a.d<b.d?-1:1);
   if(r.prof&&r.prof.t&&(!PL.prof||r.prof.t>(PL.prof.t||0)||force)&&JSON.stringify(r.prof)!==JSON.stringify(PL.prof)){PL.prof=r.prof;ch=true}
   for(const [yk,v] of Object.entries(r.yb||{})){PL.yb=PL.yb||{};const l=PL.yb[yk];if(!l||(v.t||0)>(l.t||0)){PL.yb[yk]=v;ch=true}}
-  if((r.tp||0)>(PL.tp||0)||(force&&r.tp)){for(const f of ['goal','start','pos','speed','tp'])if(r[f]!==undefined&&PL[f]!==r[f]){PL[f]=r[f];ch=true}}
+  if((r.tp||0)>(PL.tp||0)||(force&&r.tp)){for(const f of ['goal','start','pos','speed','rc','tp'])if(r[f]!==undefined&&PL[f]!==r[f]){PL[f]=r[f];ch=true}}
   if(ch){store.set('plan',PL);lastCi=null;if(homeOn())renderHome()}
   return ch;
 }
 
 fetch('vie1925.json').then(r=>r.json()).then(d=>{
-  B=d;B.forEach((bk,b)=>bk[2].forEach((_,c)=>chList.push([b,c])));initPlan();
+  VB=LDATA.vi=d;B=d;B.forEach((bk,b)=>bk[2].forEach((_,c)=>chList.push([b,c])));initPlan();
   if(!B[pos.b]||!B[pos.b][2][pos.c])pos={b:0,c:0,v:1};
   $('#loading').remove();
   const ready=()=>{build(pos.b,pos.c,{v:pos.v});renderHome();if(acct.uid)setTimeout(()=>acctSync(false,'boot'),800);if(!store.get('hint3',0)){store.set('hint3',1);setTimeout(()=>toast('Trong trang đọc: vuốt ngang để lật trang, chạm thanh dưới cùng để mở menu'),400)}};
-  (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(ready);
+  const extra=[set.lang!=='vi'?loadLang(set.lang).then(x=>{B=x}).catch(()=>{set.lang='vi'}):0,set.lang2&&set.lang2!==set.lang?loadLang(set.lang2).then(x=>{B2=x}).catch(()=>{set.lang2=''}):0];
+  Promise.all([...extra,document.fonts&&document.fonts.ready?document.fonts.ready:0]).then(ready);
 }).catch(()=>{$('#loading').textContent='Không tải được dữ liệu Kinh Thánh.'});
 }
 </script>
