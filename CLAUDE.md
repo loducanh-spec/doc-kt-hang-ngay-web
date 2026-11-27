@@ -1,6 +1,6 @@
 # Bàn giao: Đọc KT Hằng Ngày – bản web (iPhone, Android, máy tính)
 
-Cập nhật: 24/11/2026.
+Cập nhật: 27/11/2026.
 
 ## Là gì
 App đọc Kinh Thánh 1925 theo kế hoạch hằng ngày, chạy trên trình duyệt (GitHub Pages: https://loducanh-spec.github.io/doc-kt-hang-ngay-web/). iPhone: mở bằng Safari → Chia sẻ → Thêm vào MH chính.
@@ -35,6 +35,12 @@ Có **tài khoản thành viên** (email/mật khẩu): mỗi người một k�
 - **Bộ màu ảnh báo cáo** (`PALS`, `PL.rc`, chọn ở tab Báo cáo; chỉ áp dụng cho ảnh báo cáo dạng bảng và dạng vòng tròn, không đổi màu trong app): 8 cặp màu hôm nay/ngày trước. Ảnh dạng bảng có chú thích màu ở cuối.
 - Từ ngữ: Kinh Thánh 1925 gọi chương là **đoạn**; giao diện kế hoạch dùng "đoạn".
 - Biểu tượng: phương án C (vòng tiến độ quanh thánh giá), `icon-180/192/512.png`.
+
+## Quy trình mỗi phiên (harness)
+- **Startup Workflow** – đầu phiên: đọc file này → `./init.sh` (chạy `tests/smoke.py`; đỏ thì sửa trước) → đọc `feature_list.json`, `progress.md`, `session-handoff.md` → `git log --oneline -5` → chọn đúng 1 feature.
+- **One feature at a time** – mỗi lúc chỉ làm 1 feature. **Stay in scope** – không làm thêm ngoài phạm vi David đã chốt (scope).
+- **Xong (Definition of Done):** tính năng chạy đúng + `./init.sh` đạt (thêm kiểm tra mới vào `tests/smoke.py` cho tính năng mới) + ghi bằng chứng vào `feature_list.json` + repo vẫn khởi động được.
+- **End of Session** – cuối phiên: cập nhật `progress.md`, `feature_list.json`, `session-handoff.md` (bảng Check | Command | Result), commit.
 
 ## Phát hành
 - Sửa xong: đổi `VER` trong `sw.js` (dkt-vN) và `WEB_UPDATED` trong `index.html`, push lên `main`; GitHub Pages tự cập nhật sau khoảng 1 phút.

@@ -1,0 +1,16 @@
+{
+  "project": "Đọc KT Hằng Ngày – bản web",
+  "verify": "./init.sh (chạy tests/smoke.py: dữ liệu, cú pháp, 360/390/412 px, Firebase giả lập)",
+  "features": [
+    {"id":"feat-001","name":"Bộ đọc lật trang 1925","description":"Bộ đọc lấy từ kinh-thanh-web v1.0.22: lật trang ngang, 4 nền, kiểu chữ, đọc thành tiếng, service worker","dependencies":[],"status":"done","evidence":"smoke: lật trang ghi nhận Sáng-thế Ký 1 ở 360/390/412"},
+    {"id":"feat-002","name":"Kế hoạch đọc hằng ngày","description":"Mục tiêu lần/năm, phần đọc tự điều chỉnh, ghi nhận đoạn khi lật qua, Lần N năm YYYY","dependencies":["feat-001"],"status":"done","evidence":"smoke: thông báo Lần 1 khi đọc hết Khải-huyền 22"},
+    {"id":"feat-003","name":"Tài khoản Firebase","description":"Đăng ký/đăng nhập email, lưu kế hoạch ở dkt/<uid>, gộp giữa các máy, hồ sơ họ tên/nhóm","dependencies":["feat-002"],"status":"done","evidence":"smoke: đăng ký giả lập, Firestore nhận dữ liệu"},
+    {"id":"feat-004","name":"Ảnh báo cáo","description":"3 kiểu ảnh (Bảng, Vòng tròn, Lịch tháng), 8 bộ màu, lưu/chia sẻ","dependencies":["feat-002"],"status":"done","evidence":"smoke: tạo được cả 3 kiểu ảnh rộng >=1000px"},
+    {"id":"feat-005","name":"Báo cáo đọc sách giấy","description":"Báo đã đọc đến…, nút nhanh, hoàn tác","dependencies":["feat-002"],"status":"done","evidence":"t13.py phiên 26/11 (chưa đưa vào smoke)"},
+    {"id":"feat-006","name":"4 tab và góp ý UI/UX","description":"Kinh Thánh / Báo cáo / Kế hoạch / Tài khoản, 12 chỉnh sửa David chọn","dependencies":[],"status":"done","evidence":"smoke: 4 tab không tràn chữ ở 3 cỡ màn hình"},
+    {"id":"feat-007","name":"Ngôn ngữ: Hàn, Anh, Pháp, Trung giản thể","description":"krv1961, kjv, lsg1910, cuvs1919; phạm vi công cộng","dependencies":["feat-001"],"status":"done","evidence":"smoke: 4 file cùng cấu trúc 1189 đoạn với bản 1925"},
+    {"id":"feat-008","name":"Cách đọc: cuộn dọc + tối đa 4 ngôn ngữ + nhãn","description":"set.mode page/scroll, set.langs tối đa 4, set.lab","dependencies":["feat-001","feat-007"],"status":"done","evidence":"smoke: chọn 4 ngôn ngữ, nhãn, cuộn qua đoạn được ghi nhận, Lần 1 ở chế độ cuộn"},
+    {"id":"feat-009","name":"Tiếng H'Mông (HWB)","description":"Thêm Vajtswv Txojlus HWB từ PDF David gửi 27/11/2026","dependencies":["feat-007"],"status":"blocked","evidence":"","blocker":"Văn bản Hmong Daw 1992/2000 còn bản quyền (United Bible Societies / Thánh Kinh Hội Việt Nam). App công khai trên GitHub Pages nên cần văn bản cho phép trước khi chuyển đổi và đăng."},
+    {"id":"feat-010","name":"Tiếng Dao (Iu Mien)","description":"Chưa có nguồn","dependencies":["feat-007"],"status":"blocked","evidence":"","blocker":"Chưa có bản phạm vi công cộng; cần xin phép Mien Christian Mission Fellowship"}
+  ]
+}
